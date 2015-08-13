@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.1
+﻿; pb-win-notify rev.2
 ; written by deseven
 ; http://deseven.info
 
@@ -7,7 +7,8 @@
 
 EnableExplicit
 
-Enumeration #PB_Event_FirstCustomValue
+; +1000 to make sure that we won't interfere in some custom events
+Enumeration #PB_Event_FirstCustomValue + 1000
   #wnCleanup
 EndEnumeration
 
@@ -68,7 +69,7 @@ Procedure wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ff
   *notification\params\iconID = iconID
   *notification\params\window = OpenWindow(#PB_Any,#PB_Ignore,#PB_Ignore,320,100,"",#WS_POPUPWINDOW|#WS_DISABLED|#PB_Window_Invisible)
   *notification\params\windowID = WindowID(*notification\params\window)
-  SetWindowLong_(*notification\params\windowID,#GWL_EXSTYLE,GetWindowLong_(*notification\params\windowID,#GWL_EXSTYLE)|#WS_EX_LAYERED)
+  SetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE,GetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE)|#WS_EX_LAYERED)
   hideFromTaskBar(*notification\params\windowID,#True)
   If *notification\params\iconID
     iconGadget = ImageGadget(#PB_Any,10,10,32,32,*notification\params\iconID)
@@ -133,6 +134,8 @@ Procedure wnAdd(*notification.notification)
   notifications()\msg = *notification\msg
   notifications()\title = *notification\title
   notifications()\params = *notification\params
+  ClearStructure(*notification,notification)
+  FreeMemory(*notification)
   UnlockMutex(wnMutex)
 EndProcedure
 

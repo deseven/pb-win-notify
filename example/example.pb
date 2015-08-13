@@ -29,11 +29,11 @@ iconRT = ImageID(LoadImage(#PB_Any,"iRT.png"))
 iconRB = ImageID(LoadImage(#PB_Any,"iRB.png"))
 
 ; basic procedure to create random amount of text
-Procedure.s createLorum()
+Procedure.s createLorem()
   For i = 1 To Random(5,1)
-    lorum.s + "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
+    lorem.s + "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. "
   Next
-  ProcedureReturn lorum
+  ProcedureReturn lorem
 EndProcedure
 
 CreateThread(@wnProcess(),10) ; 2
@@ -44,17 +44,17 @@ Repeat
   If ev = #PB_Event_Gadget
     Select EventGadget() ; 4
       Case buttonLT
-        wnNotify("Hello there!",createLorum(),#wnLT,3000,$000099,0,titleFont,msgFont,iconLT)
+        wnNotify("Hello there!",createLorem(),#wnLT,3000,$000099,0,titleFont,msgFont,iconLT)
       Case buttonLB
-        wnNotify("Hello there!",createLorum(),#wnLB,3000,$009900,0,titleFont,msgFont,iconLB)
+        wnNotify("Hello there!",createLorem(),#wnLB,3000,$009900,0,titleFont,msgFont,iconLB)
       Case buttonCT
-        wnNotify("Hello there!",createLorum(),#wnCT,3000,$cc0000,0,titleFont,msgFont,iconCT)
+        wnNotify("Hello there!",createLorem(),#wnCT,3000,$cc0000,0,titleFont,msgFont,iconCT)
       Case buttonCB
-        wnNotify("Hello there!",createLorum(),#wnCB,3000,$999900,0,titleFont,msgFont,iconCB)
+        wnNotify("Hello there!",createLorem(),#wnCB,3000,$999900,0,titleFont,msgFont,iconCB)
       Case buttonRT
-        wnNotify("Hello there!",createLorum(),#wnRT,3000,$009999,0,titleFont,msgFont,iconRT)
+        wnNotify("Hello there!",createLorem(),#wnRT,3000,$009999,0,titleFont,msgFont,iconRT)
       Case buttonRB
-        wnNotify("Hello there!",createLorum(),#wnRB,3000,$990099,0,titleFont,msgFont,iconRB)
+        wnNotify("Hello there!",createLorem(),#wnRB,3000,$990099,0,titleFont,msgFont,iconRB)
     EndSelect
   EndIf
 Until ev = #PB_Event_CloseWindow
