@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.2
+﻿; pb-win-notify rev.3
 ; written by deseven
 ; http://deseven.info
 
@@ -72,10 +72,10 @@ Procedure wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ff
   SetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE,GetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE)|#WS_EX_LAYERED)
   hideFromTaskBar(*notification\params\windowID,#True)
   If *notification\params\iconID
-    iconGadget = ImageGadget(#PB_Any,10,10,32,32,*notification\params\iconID)
+    iconGadget = ImageGadget(#PB_Any,10,10,24,24,*notification\params\iconID)
   EndIf
-  titleGadget = TextGadget(#PB_Any,50,25,140,20,*notification\title)
-  msgGadget = TextGadget(#PB_Any,10,50,300,40,*notification\msg)
+  titleGadget = TextGadget(#PB_Any,42,12,270,20,*notification\title)
+  msgGadget = TextGadget(#PB_Any,10,36,300,50,*notification\msg)
   SetGadgetColor(titleGadget,#PB_Gadget_BackColor,*notification\params\bgColor)
   SetGadgetColor(titleGadget,#PB_Gadget_FrontColor,*notification\params\frColor)
   SetGadgetColor(msgGadget,#PB_Gadget_BackColor,*notification\params\bgColor)
@@ -96,7 +96,7 @@ Procedure wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ff
   DrawText_(hdc,GetGadgetText(msgGadget),Len(GetGadgetText(msgGadget)),rc,#DT_WORDBREAK|#DT_CALCRECT)
   ReleaseDC_(GadgetID(msgGadget),hdc)
   ResizeGadget(msgGadget,#PB_Ignore,#PB_Ignore,rc\right+2*GetSystemMetrics_(#SM_CXEDGE),rc\bottom+2*GetSystemMetrics_(#SM_CYEDGE))
-  *notification\params\h = rc\bottom+2*GetSystemMetrics_(#SM_CYEDGE) + 60
+  *notification\params\h = rc\bottom+2*GetSystemMetrics_(#SM_CYEDGE) + 44
   SetWindowColor(*notification\params\window,*notification\params\bgColor)
   CreateThread(@wnAdd(),*notification)
   CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": adding notification" : CompilerEndIf

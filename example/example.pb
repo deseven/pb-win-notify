@@ -19,8 +19,8 @@ buttonRT = ButtonGadget(#PB_Any,130,10,60,40,"RT")
 buttonRB = ButtonGadget(#PB_Any,130,50,60,40,"RB")
 
 ; you can use any icons/fonts or don't use anything at all, as you like
-titleFont = FontID(LoadFont(#PB_Any,"Arial",14,#PB_Font_Bold|#PB_Font_HighQuality))
-msgFont = FontID(LoadFont(#PB_Any,"Arial",12,#PB_Font_HighQuality))
+titleFont = FontID(LoadFont(#PB_Any,"Calibri",13,#PB_Font_Bold|#PB_Font_HighQuality))
+msgFont = FontID(LoadFont(#PB_Any,"Calibri",11,#PB_Font_HighQuality))
 iconLT = ImageID(LoadImage(#PB_Any,"iLT.png"))
 iconLB = ImageID(LoadImage(#PB_Any,"iLB.png"))
 iconCT = ImageID(LoadImage(#PB_Any,"iCT.png"))
@@ -44,17 +44,17 @@ Repeat
   If ev = #PB_Event_Gadget
     Select EventGadget() ; 4
       Case buttonLT
-        wnNotify("Hello there!",createLorem(),#wnLT,3000,$000099,0,titleFont,msgFont,iconLT)
+        wnNotify("Hello there!",createLorem(),#wnLT,3000,$646503,$eeeeee,titleFont,msgFont,iconLT)
       Case buttonLB
-        wnNotify("Hello there!",createLorem(),#wnLB,3000,$009900,0,titleFont,msgFont,iconLB)
+        wnNotify("Hello there!",createLorem(),#wnLB,3000,$435bd9,$eeeeee,titleFont,msgFont,iconLB)
       Case buttonCT
-        wnNotify("Hello there!",createLorem(),#wnCT,3000,$cc0000,0,titleFont,msgFont,iconCT)
+        wnNotify("Hello there!",createLorem(),#wnCT,3000,$c88200,$eeeeee,titleFont,msgFont,iconCT)
       Case buttonCB
-        wnNotify("Hello there!",createLorem(),#wnCB,3000,$999900,0,titleFont,msgFont,iconCB)
+        wnNotify("Hello there!",createLorem(),#wnCB,3000,$4229c0,$eeeeee,titleFont,msgFont,iconCB)
       Case buttonRT
-        wnNotify("Hello there!",createLorem(),#wnRT,3000,$009999,0,titleFont,msgFont,iconRT)
+        wnNotify("Hello there!",createLorem(),#wnRT,3000,$493603,$eeeeee,titleFont,msgFont,iconRT)
       Case buttonRB
-        wnNotify("Hello there!",createLorem(),#wnRB,3000,$990099,0,titleFont,msgFont,iconRB)
+        wnNotify("Hello there!",createLorem(),#wnRB,3000,$7a7753,$eeeeee,titleFont,msgFont,iconRB)
     EndSelect
   EndIf
 Until ev = #PB_Event_CloseWindow
@@ -62,6 +62,5 @@ Until ev = #PB_Event_CloseWindow
 ; EnableUnicode
 ; EnableXP
 ; Executable = wn.exe
-; DisableDebugger
 ; CompileSourceDirectory
-; EnableBuildCount = 1
+; EnableBuildCount = 2
