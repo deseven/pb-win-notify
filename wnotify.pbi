@@ -1,6 +1,21 @@
-﻿; pb-win-notify rev.3
+﻿; pb-win-notify rev.4
 ; written by deseven
+; https://github.com/deseven/pb-win-notify
 ; http://deseven.info
+
+; wnNotify(
+;   title.s       - title of the notification
+;   msg.s         - text of the notification
+;   castFrom.b    - location of the notification, can be one of the following: #wnLT,#wnLB,#wnCT,#wnCB,#wnRT,#wnRB
+;   timeout.l     - timeout in msec when the notification will be destroyed
+;   bgColor.l     - background color
+;   frColor.l     - front (text) color
+;   titleFontID.i - FontID() of the desired title font
+;   msgFontID.i   - FontID() of the desired message font
+;   iconID.i      - ImageID() of the desired icon right before the title
+;   onClick.b     - action to perform when you click on the notification, can be one of the following: #wnNothing,#wnClose,#wnSendEvent
+;   onClickData.i - data which will be sent as EventData() (only if onClick = #wnSendEvent)
+; )
 
 ; set that to true to check what's going on
 #wnDebug = #False
@@ -10,9 +25,16 @@ EnableExplicit
 ; +1000 to make sure that we won't interfere in some custom events
 Enumeration #PB_Event_FirstCustomValue + 1000
   #wnCleanup
+  #wnClick
 EndEnumeration
 
-Enumeration castFrom
+Enumeration wnClickActions
+  #wnNothing
+  #wnClose
+  #wnSendEvent
+EndEnumeration
+
+Enumeration wnCastFrom
   #wnLT
   #wnLB
   #wnCT
@@ -21,7 +43,7 @@ Enumeration castFrom
   #wnRB
 EndEnumeration
 
-Structure notificationParams
+Structure wnNotificationParams
   window.i
   windowID.i
   x.w
@@ -34,30 +56,54 @@ Structure notificationParams
   titleFontID.i
   msgFontID.i
   iconID.i
+  onClick.b
+  onClickData.i
 EndStructure
 
-Structure notification
+Structure wnNotification
   active.i
   shown.b
-  params.notificationParams
+  params.wnNotificationParams
   title.s
   msg.s
 EndStructure
 
-Define wnMutex.i = CreateMutex()
-NewList notifications.notification()
+#wnForever = -1
 
-Declare hideFromTaskBar(hWnd.l,flag.l)
-Declare wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ffffff,frColor.l = $000000,titleFontID = 0,msgFontID = 0,iconID = 0)
-Declare wnAdd(*notification.notification)
-Declare wnProcess(wait.i)
-Declare wnCleanup(window.i)
+Define wnMutex.i = CreateMutex()
+NewList wnNotifications.wnNotification()
 
 ; that's what you should call to display your notification
-Procedure wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ffffff,frColor.l = $000000,titleFontID = 0,msgFontID = 0,iconID = 0)
+Declare wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ffffff,frColor.l = $000000,titleFontID.i = 0,msgFontID.i = 0,iconID.i = 0,onClick.b = #wnNothing,onClickData.i = #Null)
+
+; (thread) animation and control
+Declare wnProcess(wait.i)
+
+; destroy old notifications
+Declare wnCleanup(wnd.i)
+
+; (thread) destroy all notifications
+Declare wnDestroyAll(n.i)
+
+; (thread, internal) helper function to actually add the notification without bothering the main thread
+Declare wnAdd(*notification.wnNotification)
+
+; (internal) callback for our notifications
+Declare wnCallback(hWnd.i,msg.i,wParam.i,lParam.i)
+
+; (internal) processing actions for notification event
+Declare wnOnclick(hWnd.i)
+
+; (internal) recalc the remaining notifications positions
+Declare wnRecalc(height.w,castFrom.b)
+
+; (internal) taken from pb forums, don't remember the exact topic
+Declare wnHideFromTaskBar(hWnd.i,flag.b)
+
+Procedure wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ffffff,frColor.l = $000000,titleFontID.i = 0,msgFontID.i = 0,iconID.i = 0,onClick.b = #wnNothing,onClickData.i = #Null)
   Protected rc.RECT
   Protected titleGadget.i,msgGadget.i,iconGadget.i,hdc.i,font.i
-  Protected *notification.notification = AllocateMemory(SizeOf(notification))
+  Protected *notification.wnNotification = AllocateMemory(SizeOf(wnNotification))
   *notification\title = title
   *notification\msg = msg
   *notification\params\castFrom = castFrom
@@ -67,14 +113,19 @@ Procedure wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ff
   *notification\params\titleFontID = titleFontID
   *notification\params\msgFontID = msgFontID
   *notification\params\iconID = iconID
-  *notification\params\window = OpenWindow(#PB_Any,#PB_Ignore,#PB_Ignore,320,100,"",#WS_POPUPWINDOW|#WS_DISABLED|#PB_Window_Invisible)
+  *notification\params\window = OpenWindow(#PB_Any,#PB_Ignore,#PB_Ignore,320,100,"",#WS_POPUPWINDOW|#PB_Window_Invisible)
   *notification\params\windowID = WindowID(*notification\params\window)
+  *notification\params\onClick = onClick
+  *notification\params\onClickData = onClickData
   SetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE,GetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE)|#WS_EX_LAYERED)
-  hideFromTaskBar(*notification\params\windowID,#True)
+  wnHideFromTaskBar(*notification\params\windowID,#True)
+  SetWindowCallback(@wnCallback(),*notification\params\window)
   If *notification\params\iconID
     iconGadget = ImageGadget(#PB_Any,10,10,24,24,*notification\params\iconID)
+    titleGadget = TextGadget(#PB_Any,42,12,270,20,*notification\title)
+  Else
+    titleGadget = TextGadget(#PB_Any,10,12,300,20,*notification\title)
   EndIf
-  titleGadget = TextGadget(#PB_Any,42,12,270,20,*notification\title)
   msgGadget = TextGadget(#PB_Any,10,36,300,50,*notification\msg)
   SetGadgetColor(titleGadget,#PB_Gadget_BackColor,*notification\params\bgColor)
   SetGadgetColor(titleGadget,#PB_Gadget_FrontColor,*notification\params\frColor)
@@ -100,11 +151,11 @@ Procedure wnNotify(title.s,msg.s,castFrom.b = 0,timeout.l = 3000,bgColor.l = $ff
   SetWindowColor(*notification\params\window,*notification\params\bgColor)
   CreateThread(@wnAdd(),*notification)
   CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": adding notification" : CompilerEndIf
+  ProcedureReturn *notification\params\window  
 EndProcedure
 
-; helper function to actually add the notification without bothering the main thread
-Procedure wnAdd(*notification.notification)
-  Shared wnMutex.i,notifications()
+Procedure wnAdd(*notification.wnNotification)
+  Shared wnMutex.i,wnNotifications()
   Protected rc.RECT
   LockMutex(wnMutex)
   SystemParametersInfo_(#SPI_GETWORKAREA,0,rc,0)
@@ -113,12 +164,12 @@ Procedure wnAdd(*notification.notification)
   Else
     *notification\params\y = rc\bottom - *notification\params\h - 10
   EndIf
-  ForEach notifications()
-    If notifications()\params\castFrom = *notification\params\castFrom
+  ForEach wnNotifications()
+    If wnNotifications()\params\castFrom = *notification\params\castFrom
       If *notification\params\castFrom = #wnLT Or *notification\params\castFrom = #wnRT Or *notification\params\castFrom = #wnCT
-        *notification\params\y = notifications()\params\y + notifications()\params\h + 10
+        *notification\params\y = wnNotifications()\params\y + wnNotifications()\params\h + 10
       Else
-        *notification\params\y = notifications()\params\y - *notification\params\h - 10
+        *notification\params\y = wnNotifications()\params\y - *notification\params\h - 10
       EndIf
     EndIf
   Next
@@ -130,58 +181,61 @@ Procedure wnAdd(*notification.notification)
     Case #wnRT,#wnRB
       *notification\params\x = rc\right - 320 - 10
   EndSelect
-  AddElement(notifications())
-  notifications()\msg = *notification\msg
-  notifications()\title = *notification\title
-  notifications()\params = *notification\params
-  ClearStructure(*notification,notification)
+  AddElement(wnNotifications())
+  wnNotifications()\msg = *notification\msg
+  wnNotifications()\title = *notification\title
+  wnNotifications()\params = *notification\params
+  ClearStructure(*notification,wnNotification)
   FreeMemory(*notification)
   UnlockMutex(wnMutex)
 EndProcedure
 
-; animation and control, should be run in a thread
 Procedure wnProcess(wait.i)
-  Shared wnMutex.i,notifications()
-  Protected tempx.w,tempy.w
+  Shared wnMutex.i,wnNotifications()
+  Protected tempx.w,tempy.w,castFrom.b,height.w
   Repeat
     LockMutex(wnMutex)
-    ForEach notifications()
-      If Not notifications()\active
-        CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) +  ": displaying notification in [" + Str(notifications()\params\x) + "," + Str(notifications()\params\y) + "]" : CompilerEndIf
-        notifications()\active = ElapsedMilliseconds()
-        ShowWindow_(notifications()\params\windowID,#SW_SHOWNOACTIVATE)
+    ForEach wnNotifications()
+      If Not wnNotifications()\active
+        CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) +  ": displaying notification in [" + Str(wnNotifications()\params\x) + "," + Str(wnNotifications()\params\y) + "]" : CompilerEndIf
+        wnNotifications()\active = ElapsedMilliseconds()
+        ShowWindow_(wnNotifications()\params\windowID,#SW_SHOWNOACTIVATE)
       EndIf
-      Define timePassed.i = ElapsedMilliseconds() - notifications()\active
+      Define timePassed.i = ElapsedMilliseconds() - wnNotifications()\active
       If timePassed <= 510
         CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": anim display " + Str(timePassed) : CompilerEndIf
         Define delta.f = 330/510
-        Select notifications()\params\castFrom
+        Select wnNotifications()\params\castFrom
           Case #wnLT,#wnLB
-            delta = (320 + notifications()\params\x)/510
+            delta = (320 + wnNotifications()\params\x)/510
             tempx = -320 + delta*timePassed
-            tempy = notifications()\params\y
+            tempy = wnNotifications()\params\y
           Case #wnCT,#wnCB
-            tempx = notifications()\params\x
-            tempy = notifications()\params\y
+            tempx = wnNotifications()\params\x
+            tempy = wnNotifications()\params\y
           Case #wnRT,#wnRB
-            tempx = notifications()\params\x + 330 - delta*timePassed
-            tempy = notifications()\params\y
+            tempx = wnNotifications()\params\x + 330 - delta*timePassed
+            tempy = wnNotifications()\params\y
         EndSelect
-        SetWindowPos_(notifications()\params\windowID,#HWND_TOPMOST,tempx,tempy,320,notifications()\params\h,#SWP_NOACTIVATE)
-        SetLayeredWindowAttributes_(notifications()\params\windowID,0,timePassed/2,2)
-      ElseIf Not notifications()\shown
-        notifications()\shown = #True
-        SetWindowPos_(notifications()\params\windowID,#HWND_TOPMOST,notifications()\params\x,notifications()\params\y,320,notifications()\params\h,#SWP_NOACTIVATE)
-        SetLayeredWindowAttributes_(notifications()\params\windowID,0,255,2)
+        SetWindowPos_(wnNotifications()\params\windowID,#HWND_TOPMOST,tempx,tempy,320,wnNotifications()\params\h,#SWP_NOACTIVATE)
+        SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,timePassed/2,2)
+      ElseIf Not wnNotifications()\shown
+        wnNotifications()\shown = #True
+        SetWindowPos_(wnNotifications()\params\windowID,#HWND_TOPMOST,wnNotifications()\params\x,wnNotifications()\params\y,320,wnNotifications()\params\h,#SWP_NOACTIVATE)
+        SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,255,2)
+        RedrawWindow_(wnNotifications()\params\windowID,0,0,#RDW_INVALIDATE)
       EndIf
-      If timePassed >= notifications()\params\timeout
-        If timePassed >= notifications()\params\timeout + 510
-          CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed notification " + Str(ListIndex(notifications())) : CompilerEndIf
-          PostEvent(#wnCleanup,0,0,0,notifications()\params\window)
-          DeleteElement(notifications())
+      If wnNotifications()\params\timeout <> #wnForever And timePassed >= wnNotifications()\params\timeout
+        If timePassed >= wnNotifications()\params\timeout + 510
+          CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed notification " + Str(ListIndex(wnNotifications())) : CompilerEndIf
+          PostEvent(#wnCleanup,0,0,0,wnNotifications()\params\window)
+          height = wnNotifications()\params\h
+          castFrom = wnNotifications()\params\castFrom
+          DeleteElement(wnNotifications(),#True)
+          wnRecalc(height,castFrom)
         Else
           CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": anim destroy " + Str(timePassed) : CompilerEndIf
-          SetLayeredWindowAttributes_(notifications()\params\windowID,0,255-Abs(notifications()\params\timeout - timePassed)/2,2)
+          SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,255-Abs(wnNotifications()\params\timeout - timePassed)/2,2)
         EndIf
       EndIf
     Next
@@ -190,14 +244,75 @@ Procedure wnProcess(wait.i)
   ForEver
 EndProcedure
 
-; destroying window from main thread (because... reasons)
-Procedure wnCleanup(window.i)
-  CloseWindow(window)
+Procedure wnCleanup(wnd.i)
+  If IsWindow(wnd) : CloseWindow(wnd) : EndIf
   CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed window " + Str(window) : CompilerEndIf
 EndProcedure
 
-; taken from pb forums, don't remember the exact topic
-Procedure hideFromTaskBar(hWnd.l,flag.l)
+Procedure wnCallback(hWnd.i,msg.i,wParam.i,lParam.i)
+  If msg = #WM_LBUTTONUP
+    CreateThread(@wnOnclick(),hWnd)
+  EndIf
+  ProcedureReturn #PB_ProcessPureBasicEvents
+EndProcedure
+
+Procedure wnOnclick(hWnd.i)
+  Shared wnMutex.i,wnNotifications()
+  Protected height.w,castFrom.b
+  LockMutex(wnMutex)
+  ForEach wnNotifications()
+    If wnNotifications()\params\windowID = hWnd
+      Select wnNotifications()\params\onClick
+        Case #wnClose
+          PostEvent(#wnCleanup,0,0,0,wnNotifications()\params\window)
+          height = wnNotifications()\params\h
+          castFrom = wnNotifications()\params\castFrom
+          DeleteElement(wnNotifications(),#True)
+          wnRecalc(height,castFrom)
+        Case #wnSendEvent
+          PostEvent(#wnClick,wnNotifications()\params\window,#Null,#Null,wnNotifications()\params\onClickData)
+      EndSelect
+      Break
+    EndIf
+  Next
+  UnlockMutex(wnMutex)
+EndProcedure
+
+Procedure wnRecalc(height.w,castFrom.b)
+  Shared wnNotifications()
+  Protected rc.RECT,cur.i,offsetTop.w,offsetBottom.w
+  SystemParametersInfo_(#SPI_GETWORKAREA,0,rc,0)
+  offsetTop = rc\top
+  offsetBottom = rc\bottom
+  cur = ListIndex(wnNotifications())
+  ForEach wnNotifications()
+    If wnNotifications()\params\castFrom = castFrom
+      If castFrom = #wnLT Or castFrom = #wnRT Or castFrom = #wnCT
+        wnNotifications()\params\y = offsetTop + 10 
+        offsetTop = wnNotifications()\params\y + wnNotifications()\params\h
+      Else
+        wnNotifications()\params\y = offsetBottom - wnNotifications()\params\h - 10 
+        offsetBottom = wnNotifications()\params\y
+      EndIf
+      SetWindowPos_(wnNotifications()\params\windowID,#HWND_TOPMOST,wnNotifications()\params\x,wnNotifications()\params\y,320,wnNotifications()\params\h,#SWP_NOACTIVATE)
+      SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,255,2)
+      RedrawWindow_(wnNotifications()\params\windowID,0,0,#RDW_INVALIDATE)
+    EndIf
+  Next
+  If cur >= 0 : SelectElement(wnNotifications(),cur) : EndIf
+EndProcedure
+
+Procedure wnDestroyAll(n.i)
+  Shared wnMutex,wnNotifications()
+  LockMutex(wnMutex)
+  ForEach wnNotifications()
+    PostEvent(#wnCleanup,0,0,0,wnNotifications()\params\window)
+    DeleteElement(wnNotifications())
+  Next
+  UnlockMutex(wnMutex)
+EndProcedure
+
+Procedure wnHideFromTaskBar(hWnd.i,flag.b)
   Protected TBL.ITaskbarList
   CoInitialize_(0)
   If CoCreateInstance_(?CLSID_TaskBarList,0,1,?IID_ITaskBarList,@TBL) = #S_OK
