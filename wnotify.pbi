@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.4
+﻿; pb-win-notify rev.5
 ; written by deseven
 ; https://github.com/deseven/pb-win-notify
 ; http://deseven.info
@@ -19,6 +19,15 @@
 
 ; set that to true to check what's going on
 #wnDebug = #False
+
+; animations
+#wnFadeIn = #True
+#wnSlideIn = #True
+#wnFadeOut = #False
+
+; and animations' time
+#wnInAnimTime = 500
+#wnOutAnimTime = 800
 
 EnableExplicit
 
@@ -41,6 +50,7 @@ Enumeration wnCastFrom
   #wnCB
   #wnRT
   #wnRB
+  #wnAll
 EndEnumeration
 
 Structure wnNotificationParams
@@ -82,8 +92,11 @@ Declare wnProcess(wait.i)
 ; destroy old notifications
 Declare wnCleanup(wnd.i)
 
+; (thread) destroy notification
+Declare wnDestroy(wnd.i)
+
 ; (thread) destroy all notifications
-Declare wnDestroyAll(n.i)
+Declare wnDestroyAll(castFrom.i = #wnAll)
 
 ; (thread, internal) helper function to actually add the notification without bothering the main thread
 Declare wnAdd(*notification.wnNotification)
@@ -192,7 +205,7 @@ EndProcedure
 
 Procedure wnProcess(wait.i)
   Shared wnMutex.i,wnNotifications()
-  Protected tempx.w,tempy.w,castFrom.b,height.w
+  Protected animX.w,animY.w,castFrom.b,height.w,timePassed.i,deltaMove.f,deltaAlpha.f
   Repeat
     LockMutex(wnMutex)
     ForEach wnNotifications()
@@ -201,41 +214,48 @@ Procedure wnProcess(wait.i)
         wnNotifications()\active = ElapsedMilliseconds()
         ShowWindow_(wnNotifications()\params\windowID,#SW_SHOWNOACTIVATE)
       EndIf
-      Define timePassed.i = ElapsedMilliseconds() - wnNotifications()\active
-      If timePassed <= 510
+      timePassed = ElapsedMilliseconds() - wnNotifications()\active
+      If timePassed <= #wnInAnimTime
         CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": anim display " + Str(timePassed) : CompilerEndIf
-        Define delta.f = 330/510
-        Select wnNotifications()\params\castFrom
-          Case #wnLT,#wnLB
-            delta = (320 + wnNotifications()\params\x)/510
-            tempx = -320 + delta*timePassed
-            tempy = wnNotifications()\params\y
-          Case #wnCT,#wnCB
-            tempx = wnNotifications()\params\x
-            tempy = wnNotifications()\params\y
-          Case #wnRT,#wnRB
-            tempx = wnNotifications()\params\x + 330 - delta*timePassed
-            tempy = wnNotifications()\params\y
-        EndSelect
-        SetWindowPos_(wnNotifications()\params\windowID,#HWND_TOPMOST,tempx,tempy,320,wnNotifications()\params\h,#SWP_NOACTIVATE)
-        SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,timePassed/2,2)
+        If #wnSlideIn
+          deltaMove = 330/#wnInAnimTime
+          Select wnNotifications()\params\castFrom
+            Case #wnLT,#wnLB
+              deltaMove = (320 + wnNotifications()\params\x)/#wnInAnimTime
+              animX = -320 + deltaMove*timePassed
+              animY = wnNotifications()\params\y
+            Case #wnCT,#wnCB
+              animX = wnNotifications()\params\x
+              animY = wnNotifications()\params\y
+            Case #wnRT,#wnRB
+              animX = wnNotifications()\params\x + 330 - deltaMove*timePassed
+              animY = wnNotifications()\params\y
+          EndSelect
+        Else
+          animX = wnNotifications()\params\x
+          animY = wnNotifications()\params\y
+        EndIf
+        If #wnFadeIn : deltaAlpha = timePassed/#wnInAnimTime : Else : deltaAlpha = 1 : EndIf
+        SetWindowPos_(wnNotifications()\params\windowID,#HWND_TOPMOST,animX,animY,320,wnNotifications()\params\h,#SWP_NOACTIVATE)
+        SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,deltaAlpha*255,2)
       ElseIf Not wnNotifications()\shown
         wnNotifications()\shown = #True
         SetWindowPos_(wnNotifications()\params\windowID,#HWND_TOPMOST,wnNotifications()\params\x,wnNotifications()\params\y,320,wnNotifications()\params\h,#SWP_NOACTIVATE)
         SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,255,2)
         RedrawWindow_(wnNotifications()\params\windowID,0,0,#RDW_INVALIDATE)
       EndIf
-      If wnNotifications()\params\timeout <> #wnForever And timePassed >= wnNotifications()\params\timeout
-        If timePassed >= wnNotifications()\params\timeout + 510
+      If wnNotifications()\params\timeout <> #wnForever
+        If timePassed >= wnNotifications()\params\timeout + #wnOutAnimTime Or (timePassed >= wnNotifications()\params\timeout And Not #wnFadeOut)
           CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed notification " + Str(ListIndex(wnNotifications())) : CompilerEndIf
           PostEvent(#wnCleanup,0,0,0,wnNotifications()\params\window)
           height = wnNotifications()\params\h
           castFrom = wnNotifications()\params\castFrom
           DeleteElement(wnNotifications(),#True)
           wnRecalc(height,castFrom)
-        Else
+        ElseIf timePassed >= wnNotifications()\params\timeout
+          deltaAlpha = Abs(wnNotifications()\params\timeout - timePassed)/#wnOutAnimTime*255
           CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": anim destroy " + Str(timePassed) : CompilerEndIf
-          SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,255-Abs(wnNotifications()\params\timeout - timePassed)/2,2)
+          SetLayeredWindowAttributes_(wnNotifications()\params\windowID,0,255-deltaAlpha,2)
         EndIf
       EndIf
     Next
@@ -302,12 +322,30 @@ Procedure wnRecalc(height.w,castFrom.b)
   If cur >= 0 : SelectElement(wnNotifications(),cur) : EndIf
 EndProcedure
 
-Procedure wnDestroyAll(n.i)
+Procedure wnDestroy(wnd.i)
+  Shared wnMutex,wnNotifications()
+  Protected height.w,castFrom.b
+  LockMutex(wnMutex)
+  ForEach wnNotifications()
+    If wnNotifications()\params\window = wnd
+      height = wnNotifications()\params\h
+      castFrom = wnNotifications()\params\castFrom
+      PostEvent(#wnCleanup,0,0,0,wnNotifications()\params\window)
+      DeleteElement(wnNotifications(),#True)
+      wnRecalc(height,castFrom)
+    EndIf
+  Next
+  UnlockMutex(wnMutex)
+EndProcedure
+
+Procedure wnDestroyAll(castFrom.i = #wnAll)
   Shared wnMutex,wnNotifications()
   LockMutex(wnMutex)
   ForEach wnNotifications()
-    PostEvent(#wnCleanup,0,0,0,wnNotifications()\params\window)
-    DeleteElement(wnNotifications())
+    If castFrom = #wnAll Or wnNotifications()\params\castFrom = castFrom
+      PostEvent(#wnCleanup,0,0,0,wnNotifications()\params\window)
+      DeleteElement(wnNotifications())
+    EndIf
   Next
   UnlockMutex(wnMutex)
 EndProcedure

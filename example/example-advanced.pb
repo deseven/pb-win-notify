@@ -1,14 +1,14 @@
-﻿; pb-win-notify advanced example file
+﻿; pb-win-notify advanced example
 
-; in this example you'll see how to use the full functionality
+; in this example you'll see how to use the advanced functionality
 
 IncludeFile "../wnotify.pbi"
 UsePNGImageDecoder()
 
 timeout = 3000
-onClick = #wnSendEvent
+onClick = #wnNothing
 
-OpenWindow(0,#PB_Ignore,#PB_Ignore,200,160,"pb-win-notify",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
+OpenWindow(0,#PB_Ignore,#PB_Ignore,200,160,"pb-win-notify advanced",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
 buttonLT = ButtonGadget(#PB_Any,10,10,60,40,"LT")
 buttonLB = ButtonGadget(#PB_Any,10,50,60,40,"LB")
 buttonCT = ButtonGadget(#PB_Any,70,10,60,40,"CT")
@@ -22,12 +22,12 @@ buttonDestroyAll = ButtonGadget(#PB_Any,10,110,180,40,"destroy all")
 ; icons/fonts
 titleFont = FontID(LoadFont(#PB_Any,"Calibri",13,#PB_Font_Bold))
 msgFont = FontID(LoadFont(#PB_Any,"Calibri",11))
-iconLT = ImageID(LoadImage(#PB_Any,"iLT.png"))
-iconLB = ImageID(LoadImage(#PB_Any,"iLB.png"))
-iconCT = ImageID(LoadImage(#PB_Any,"iCT.png"))
-iconCB = ImageID(LoadImage(#PB_Any,"iCB.png"))
-iconRT = ImageID(LoadImage(#PB_Any,"iRT.png"))
-iconRB = ImageID(LoadImage(#PB_Any,"iRB.png"))
+iconLT = ImageID(LoadImage(#PB_Any,"res\iLT.png"))
+iconLB = ImageID(LoadImage(#PB_Any,"res\iLB.png"))
+iconCT = ImageID(LoadImage(#PB_Any,"res\iCT.png"))
+iconCB = ImageID(LoadImage(#PB_Any,"res\iCB.png"))
+iconRT = ImageID(LoadImage(#PB_Any,"res\iRT.png"))
+iconRB = ImageID(LoadImage(#PB_Any,"res\iRB.png"))
 
 ; basic procedure to create random amount of text
 Procedure.s createLorem()
@@ -47,17 +47,17 @@ Repeat
   If ev = #PB_Event_Gadget
     Select EventGadget()
       Case buttonLT
-        wnNotify("Hello there!",createLorem(),#wnLT,timeout,$646503,$eeeeee,titleFont,msgFont,iconLT,onClick,0)
+        wnNotify("Hello there!",createLorem(),#wnLT,timeout,$646503,$eeeeee,titleFont,msgFont,iconLT,onClick)
       Case buttonLB
-        wnNotify("Hello there!",createLorem(),#wnLB,timeout,$435bd9,$eeeeee,titleFont,msgFont,iconLB,onClick,0)
+        wnNotify("Hello there!",createLorem(),#wnLB,timeout,$435bd9,$eeeeee,titleFont,msgFont,iconLB,onClick)
       Case buttonCT
-        wnNotify("Hello there!",createLorem(),#wnCT,timeout,$c88200,$eeeeee,titleFont,msgFont,iconCT,onClick,0)
+        wnNotify("Hello there!",createLorem(),#wnCT,timeout,$c88200,$eeeeee,titleFont,msgFont,iconCT,onClick)
       Case buttonCB
-        wnNotify("Hello there!",createLorem(),#wnCB,timeout,$4229c0,$eeeeee,titleFont,msgFont,iconCB,onClick,0)
+        wnNotify("Hello there!",createLorem(),#wnCB,timeout,$4229c0,$eeeeee,titleFont,msgFont,iconCB,onClick)
       Case buttonRT
-        wnNotify("Hello there!",createLorem(),#wnRT,timeout,$493603,$eeeeee,titleFont,msgFont,iconRT,onClick,0)
+        wnNotify("Hello there!",createLorem(),#wnRT,timeout,$493603,$eeeeee,titleFont,msgFont,iconRT,onClick)
       Case buttonRB
-        wnNotify("Hello there!",createLorem(),#wnRB,timeout,$7a7753,$eeeeee,titleFont,msgFont,iconRB,onClick,0)
+        wnNotify("Hello there!",createLorem(),#wnRB,timeout,$7a7753,$eeeeee,titleFont,msgFont,iconRB,onClick)
       Case cbNoTimeout
         If GetGadgetState(cbNoTimeout) = #PB_Checkbox_Checked
           timeout = #wnForever
@@ -68,19 +68,12 @@ Repeat
         If GetGadgetState(cbCloseOnClick) = #PB_Checkbox_Checked
           onClick = #wnClose
         Else
-          onClick = #wnSendEvent
+          onClick = #wnNothing
         EndIf
       Case buttonDestroyAll
         ; should be called in a thread
-        CreateThread(@wnDestroyAll(),0)
+        CreateThread(@wnDestroyAll(),#wnAll)
     EndSelect
-  EndIf
-  ; this is the event which will be sent if you call wnNotify() with onClick = #wnSendEvent
-  ; and click on the created notification
-  If ev = #wnClick
-    Debug "you clicked on notification " + EventWindow()
-    ; here you can also call EventData() to get the onClickData param you passed while calling wnNotify()
-    ; it unlocks many possibilities, for example you can open the desired url, run some program, etc
   EndIf
 Until ev = #PB_Event_CloseWindow
 ; IDE Options = PureBasic 5.31 (Windows - x86)
