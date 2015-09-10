@@ -22,24 +22,24 @@ CreateThread(@wnProcess(),10)
 
 Repeat
   ev = WaitWindowEvent()
-  If ev = #wnCleanup : wnCleanup(EventData()) : EndIf
+  If ev = #wnCleanup : wnCleanup(EventWindow()) : EndIf
   If ev = #PB_Event_Gadget
     Select EventGadget()
       Case buttonClose
-        ; you can use #wnClose as the onClick param to close the notification,
+        ; you can use #wnClickClose as the onClick param to close the notification,
         ; so there is no need to send the custom event
         ; but in this example we will use it anyway
-        closeNotification = wnNotify("Hello there!","Click me to close!",#wnRB,#wnForever,$646503,$eeeeee,titleFont,msgFont,iconClose,#wnSendEvent)
+        closeNotification = wnNotify("Hello there!","Click me to close!",#wnRB,#wnForever,$646503,$eeeeee,titleFont,msgFont,iconClose,#wnClickEvent)
         DisableGadget(buttonClose,#True)
       Case buttonNotepad
-        ; same here
-        notepadNotification = wnNotify("Hello there!","Click me to launch notepad!",#wnRB,#wnForever,$435bd9,$eeeeee,titleFont,msgFont,iconNotepad,#wnSendEvent)
+        ; we will also use the onClose event in this one
+        notepadNotification = wnNotify("Hello there!","Click me to launch notepad!",#wnRB,#wnForever,$435bd9,$eeeeee,titleFont,msgFont,iconNotepad,#wnClickClose,0,#wnCloseEvent)
         DisableGadget(buttonNotepad,#True)
       Case buttonLink
         ; to pass some additional params we can use the onClickData
         ; but it's not possible to pass a string
         ; however you still can call it with a pointer
-        linkNotification = wnNotify("Hello there!","Click me and to open link!",#wnRB,#wnForever,$c88200,$eeeeee,titleFont,msgFont,iconLink,#wnSendEvent,@myLink)
+        linkNotification = wnNotify("Hello there!","Click me and to open link!",#wnRB,#wnForever,$c88200,$eeeeee,titleFont,msgFont,iconLink,#wnClickEvent,@myLink)
         DisableGadget(buttonLink,#True)
     EndSelect
   EndIf
@@ -48,16 +48,11 @@ Repeat
     ; to detect which notification sent you this event 
     ; check the EventWindow() against the value you got from wnNotify()
     ; don't forget to use wnDestroy() if you don't need that notification anymore
-    Debug "you clicked on notification " + EventWindow()
     Select EventWindow()
       Case closeNotification
         ; should be called in a thread
         CreateThread(@wnDestroy(),EventWindow())
         closeNotification = 0 : DisableGadget(buttonClose,#False)
-      Case notepadNotification
-        RunProgram("notepad")
-        CreateThread(@wnDestroy(),EventWindow())
-        notepadNotification = 0 : DisableGadget(buttonNotepad,#False)
       Case linkNotification
         ; here we grab our url from memory
         ; you actually don't need to do that as you have only one url
@@ -68,9 +63,19 @@ Repeat
         linkNotification = 0 : DisableGadget(buttonLink,#False)
     EndSelect
   EndIf
+  ; to get the close event you should check for #wnClose
+  If ev = #wnClose
+    Select EventWindow()
+      Case notepadNotification
+        RunProgram("notepad")
+        CreateThread(@wnDestroy(),EventWindow())
+        notepadNotification = 0 : DisableGadget(buttonNotepad,#False)
+    EndSelect
+  EndIf
 Until ev = #PB_Event_CloseWindow
 ; IDE Options = PureBasic 5.31 (Windows - x86)
 ; EnableUnicode
+; EnableThread
 ; EnableXP
 ; Executable = wn.exe
 ; CompileSourceDirectory

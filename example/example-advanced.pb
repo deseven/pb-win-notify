@@ -6,7 +6,7 @@ IncludeFile "../wnotify.pbi"
 UsePNGImageDecoder()
 
 timeout = 3000
-onClick = #wnNothing
+onClick = #wnClickNone
 
 OpenWindow(0,#PB_Ignore,#PB_Ignore,200,160,"pb-win-notify advanced",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
 buttonLT = ButtonGadget(#PB_Any,10,10,60,40,"LT")
@@ -43,7 +43,7 @@ CreateThread(@wnProcess(),10)
 
 Repeat
   ev = WaitWindowEvent()
-  If ev = #wnCleanup : wnCleanup(EventData()) : EndIf
+  If ev = #wnCleanup : wnCleanup(EventWindow()) : EndIf
   If ev = #PB_Event_Gadget
     Select EventGadget()
       Case buttonLT
@@ -66,9 +66,9 @@ Repeat
         EndIf
       Case cbCloseOnClick
         If GetGadgetState(cbCloseOnClick) = #PB_Checkbox_Checked
-          onClick = #wnClose
+          onClick = #wnClickClose
         Else
-          onClick = #wnNothing
+          onClick = #wnClickNone
         EndIf
       Case buttonDestroyAll
         ; should be called in a thread
@@ -78,6 +78,7 @@ Repeat
 Until ev = #PB_Event_CloseWindow
 ; IDE Options = PureBasic 5.31 (Windows - x86)
 ; EnableUnicode
+; EnableThread
 ; EnableXP
 ; Executable = wn.exe
 ; CompileSourceDirectory

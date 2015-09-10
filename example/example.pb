@@ -15,13 +15,14 @@ CreateThread(@wnProcess(),10) ; 2
 
 Repeat
   ev = WaitWindowEvent()
-  If ev = #wnCleanup : wnCleanup(EventData()) : EndIf ; 3
+  If ev = #wnCleanup : wnCleanup(EventWindow()) : EndIf ; 3
   If ev = #PB_Event_Gadget
     wnNotify("Hello there!","This is a basic notification created with pb-win-notify!") ; 4
   EndIf
 Until ev = #PB_Event_CloseWindow
 ; IDE Options = PureBasic 5.31 (Windows - x86)
 ; EnableUnicode
+; EnableThread
 ; EnableXP
 ; Executable = wn.exe
 ; CompileSourceDirectory
