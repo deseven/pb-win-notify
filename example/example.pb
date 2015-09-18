@@ -20,7 +20,7 @@ Repeat
     wnNotify("Hello there!","This is a basic notification created with pb-win-notify!") ; 4
   EndIf
 Until ev = #PB_Event_CloseWindow
-; IDE Options = PureBasic 5.31 (Windows - x86)
+; IDE Options = PureBasic 5.40 LTS Beta 4 (Windows - x86)
 ; EnableUnicode
 ; EnableThread
 ; EnableXP

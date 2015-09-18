@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.6
+﻿; pb-win-notify rev.7
 ; written by deseven
 ; https://github.com/deseven/pb-win-notify
 ; http://deseven.info
@@ -177,19 +177,23 @@ EndProcedure
 Procedure wnNotifyStruct(*notification.wnNotification)
   Protected rc.RECT,wnd.i
   *notification\params\window = OpenWindow(#PB_Any,#PB_Ignore,#PB_Ignore,320,100,"",#PB_Window_ScreenCentered|#PB_Window_BorderLess|#PB_Window_Invisible)
-  *notification\params\windowID = WindowID(*notification\params\window)
-  SetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE,GetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE)|#WS_EX_LAYERED)
-  wnHideFromTaskBar(*notification\params\windowID,#True)
-  SetWindowCallback(@wnCallback(),*notification\params\window)
-  StickyWindow(*notification\params\window,#True)
-  wnd = *notification\params\window
-  *notification\params\image = createNotificationImage(320,*notification\title,*notification\msg,*notification\params\frColor,*notification\params\bgColor,*notification\params\iconID,*notification\params\titleFontID,*notification\params\msgFontID)
-  *notification\params\imageID = ImageID(*notification\params\image)
-  *notification\params\h = ImageHeight(*notification\params\image)
-  updateNotification(*notification\params\window,*notification\params\windowID,*notification\params\image,-10000,-10000,320,*notification\params\h,255,#True)
-  CreateThread(@wnAdd(),*notification)
-  CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": adding notification" : CompilerEndIf
-  ProcedureReturn wnd
+  If IsWindow(*notification\params\window)
+    *notification\params\windowID = WindowID(*notification\params\window)
+    SetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE,GetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE)|#WS_EX_LAYERED)
+    wnHideFromTaskBar(*notification\params\windowID,#True)
+    SetWindowCallback(@wnCallback(),*notification\params\window)
+    StickyWindow(*notification\params\window,#True)
+    wnd = *notification\params\window
+    *notification\params\image = createNotificationImage(320,*notification\title,*notification\msg,*notification\params\frColor,*notification\params\bgColor,*notification\params\iconID,*notification\params\titleFontID,*notification\params\msgFontID)
+    *notification\params\imageID = ImageID(*notification\params\image)
+    *notification\params\h = ImageHeight(*notification\params\image)
+    updateNotification(*notification\params\window,*notification\params\windowID,*notification\params\image,-10000,-10000,320,*notification\params\h,255,#True)
+    CreateThread(@wnAdd(),*notification)
+    CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": adding notification" : CompilerEndIf
+    ProcedureReturn wnd
+  Else
+    CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": failed to open new window!" : CompilerEndIf
+  EndIf
 EndProcedure
 
 Procedure wnAdd(*notification.wnNotification)
@@ -429,21 +433,27 @@ EndProcedure
 Procedure createNotificationImage(width.l,title.s,msg.s,frColor.l,bgColor.l,iconID.i,titleFontID.i,msgFontID.i)
   Protected image.i,height.l,textOffset.l,msgFontSize.l
   Protected NewList lines.s()
-  msgFontSize = getFontSize(msgFontSize)
-  image = CreateImage(#PB_Any,1,1)
-  StartDrawing(ImageOutput(image))
-  If msgFontID : DrawingFont(msgFontID) : EndIf
-  wrapText(msg,width-20,lines())
-  StopDrawing()
-  FreeImage(image)
-  height = 50 + ListSize(lines()) * msgFontSize
+  If Not Len(msg)
+    height = 44
+  Else
+    msgFontSize = getFontSize(msgFontSize)
+    image = CreateImage(#PB_Any,1,1)
+    StartDrawing(ImageOutput(image))
+    If msgFontID : DrawingFont(msgFontID) : EndIf
+    wrapText(msg,width-20,lines())
+    StopDrawing()
+    FreeImage(image)
+    height = 50 + ListSize(lines()) * msgFontSize
+  EndIf
   image = CreateImage(#PB_Any,width,height,32,bgColor)
   StartDrawing(ImageOutput(image))
   BackColor(bgColor)
   FrontColor(frColor)
   If titleFontID : DrawingFont(titleFontID) : EndIf
   If iconID
-    DrawAlphaImage(iconID,10,10)
+    DrawingMode(#PB_2DDrawing_AlphaBlend)
+    DrawImage(iconID,10,10)
+    DrawingMode(#PB_2DDrawing_Default)
     DrawText(42,12,title)
   Else
     DrawText(10,12,title)
@@ -455,7 +465,6 @@ Procedure createNotificationImage(width.l,title.s,msg.s,frColor.l,bgColor.l,icon
   Next
   StopDrawing()
   FreeList(lines())
-  SaveImage(image,"test.bmp")
   ProcedureReturn image
 EndProcedure
 
@@ -555,7 +564,7 @@ Procedure getFontSize(fontID.i)
 EndProcedure
 
 DisableExplicit
-; IDE Options = PureBasic 5.31 (Windows - x86)
+; IDE Options = PureBasic 5.40 LTS Beta 4 (Windows - x86)
 ; EnableUnicode
 ; EnableThread
 ; EnableXP
