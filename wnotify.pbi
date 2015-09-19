@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.7
+﻿; pb-win-notify rev.8
 ; written by deseven
 ; https://github.com/deseven/pb-win-notify
 ; http://deseven.info
@@ -156,6 +156,9 @@ Declare wrapText(text.s,width.l,List lines.s())
 ; (internal) gets the font size in pixels
 Declare getFontSize(fontID.i)
 
+; (internal) check if the notification should be visible
+Declare isVisible(*notification.wnNotification)
+
 Procedure wnNotify(title.s,msg.s,castFrom.b = #wnLT,timeout.l = #wnDefTimeout,bgColor.l = #wnDefBgColor,frColor.l = #wnDefFrColor,titleFontID.i = 0,msgFontID.i = 0,iconID.i = 0,onClick.b = #wnClickNone,onClickData.i = #Null,onClose.i = #wnCloseNone,onCloseData.i = #Null)
   Protected *notification.wnNotification = AllocateMemory(SizeOf(wnNotification))
   *notification\title = title
@@ -187,7 +190,6 @@ Procedure wnNotifyStruct(*notification.wnNotification)
     *notification\params\image = createNotificationImage(320,*notification\title,*notification\msg,*notification\params\frColor,*notification\params\bgColor,*notification\params\iconID,*notification\params\titleFontID,*notification\params\msgFontID)
     *notification\params\imageID = ImageID(*notification\params\image)
     *notification\params\h = ImageHeight(*notification\params\image)
-    updateNotification(*notification\params\window,*notification\params\windowID,*notification\params\image,-10000,-10000,320,*notification\params\h,255,#True)
     CreateThread(@wnAdd(),*notification)
     CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": adding notification" : CompilerEndIf
     ProcedureReturn wnd
@@ -225,43 +227,46 @@ Procedure wnProcess(wait.i)
   Repeat
     LockMutex(wnMutex)
     ForEach wnNotifications()
-      If Not wnNotifications()\active
-        CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) +  ": displaying notification in [" + Str(wnNotifications()\params\x) + "," + Str(wnNotifications()\params\y) + "]" : CompilerEndIf
-        wnNotifications()\active = ElapsedMilliseconds()
-      EndIf
       timePassed = ElapsedMilliseconds() - wnNotifications()\active
-      If timePassed <= #wnInAnimTime
-        CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": anim display " + Str(timePassed) : CompilerEndIf
-        If #wnSlideIn
-          deltaMove = 330/#wnInAnimTime
-          Select wnNotifications()\params\castFrom
-            Case #wnLT,#wnLB
-              deltaMove = (320 + wnNotifications()\params\x)/#wnInAnimTime
-              animX = -320 + deltaMove*timePassed
-              animY = wnNotifications()\params\y
-            Case #wnCT,#wnCB
-              animX = wnNotifications()\params\x
-              animY = wnNotifications()\params\y
-            Case #wnRT,#wnRB
-              animX = wnNotifications()\params\x + 330 - deltaMove*timePassed
-              animY = wnNotifications()\params\y
-          EndSelect
-        Else
-          animX = wnNotifications()\params\x
-          animY = wnNotifications()\params\y
+      If Not wnNotifications()\active
+        If isVisible(@wnNotifications())
+          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,-10000,-10000,320,wnNotifications()\params\h,255,#True)
+          CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) +  ": displaying notification in [" + Str(wnNotifications()\params\x) + "," + Str(wnNotifications()\params\y) + "]" : CompilerEndIf
+          wnNotifications()\active = ElapsedMilliseconds()
         EndIf
-        If #wnFadeIn : deltaAlpha = timePassed/#wnInAnimTime : Else : deltaAlpha = 1 : EndIf
-        updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,animX,animY,320,wnNotifications()\params\h,255 * deltaAlpha)
-      ElseIf Not wnNotifications()\shown
-        wnNotifications()\shown = #True
-        updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,wnNotifications()\params\x,wnNotifications()\params\y,320,wnNotifications()\params\h,255)
-      EndIf
-      If wnNotifications()\params\timeout <> #wnForever
-        If timePassed >= wnNotifications()\params\timeout + #wnOutAnimTime Or (timePassed >= wnNotifications()\params\timeout And Not #wnFadeOut)
-          wnDestroyThis()
-        ElseIf timePassed >= wnNotifications()\params\timeout
-          deltaAlpha = Abs(wnNotifications()\params\timeout - timePassed)/#wnOutAnimTime*255
-          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,#wnIgnore,#wnIgnore,320,wnNotifications()\params\h,255-deltaAlpha)
+      Else
+        If timePassed <= #wnInAnimTime
+          CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": anim display " + Str(timePassed) : CompilerEndIf
+          If #wnSlideIn
+            deltaMove = 330/#wnInAnimTime
+            Select wnNotifications()\params\castFrom
+              Case #wnLT,#wnLB
+                deltaMove = (320 + wnNotifications()\params\x)/#wnInAnimTime
+                animX = -320 + deltaMove*timePassed
+                animY = wnNotifications()\params\y
+              Case #wnCT,#wnCB
+                animX = wnNotifications()\params\x
+                animY = wnNotifications()\params\y
+              Case #wnRT,#wnRB
+                animX = wnNotifications()\params\x + 330 - deltaMove*timePassed
+                animY = wnNotifications()\params\y
+            EndSelect
+          Else
+            animX = wnNotifications()\params\x
+            animY = wnNotifications()\params\y
+          EndIf
+          If #wnFadeIn : deltaAlpha = timePassed/#wnInAnimTime : Else : deltaAlpha = 1 : EndIf
+          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,animX,animY,320,wnNotifications()\params\h,255 * deltaAlpha)
+        ElseIf Not wnNotifications()\shown
+          wnNotifications()\shown = #True
+          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,wnNotifications()\params\x,wnNotifications()\params\y,320,wnNotifications()\params\h,255)
+        ElseIf wnNotifications()\params\timeout <> #wnForever
+          If timePassed >= wnNotifications()\params\timeout + #wnOutAnimTime Or (timePassed >= wnNotifications()\params\timeout And Not #wnFadeOut)
+            wnDestroyThis()
+          ElseIf timePassed >= wnNotifications()\params\timeout
+            deltaAlpha = Abs(wnNotifications()\params\timeout - timePassed)/#wnOutAnimTime*255
+            updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,#wnIgnore,#wnIgnore,320,wnNotifications()\params\h,255-deltaAlpha)
+          EndIf
         EndIf
       EndIf
     Next
@@ -272,7 +277,7 @@ EndProcedure
 
 Procedure wnCleanup(wnd.i)
   If IsWindow(wnd) : CloseWindow(wnd) : EndIf
-  CreateThread(@wnRecalc(),0)
+  CreateThread(@wnRecalc(),#False)
   CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed window " + Str(wnd) : CompilerEndIf
 EndProcedure
 
@@ -373,16 +378,10 @@ EndProcedure
 
 Procedure wnDestroy(wnd.i)
   Shared wnMutex,wnNotifications()
-  Protected height.w,castFrom.b,cur.i
   LockMutex(wnMutex)
   ForEach wnNotifications()
     If wnNotifications()\params\window = wnd
-      If wnNotifications()\params\onClose = #wnCloseEvent
-        PostEvent(#wnClose,wnNotifications()\params\window,0,0,wnNotifications()\params\onCloseData)
-      EndIf
-      DeleteElement(wnNotifications())
-      CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed notification " + Str(wnd) : CompilerEndIf
-      PostEvent(#wnCleanup,wnd,0)
+      wnDestroyThis()
     EndIf
   Next
   UnlockMutex(wnMutex)
@@ -398,6 +397,7 @@ Procedure wnDestroyThis()
     PostEvent(#wnClose,wnNotifications()\params\window,0,0,wnNotifications()\params\onCloseData)
   EndIf
   wnd = wnNotifications()\params\window
+  FreeImage(wnNotifications()\params\image)
   DeleteElement(wnNotifications())
   CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed notification " + Str(wnd) : CompilerEndIf
   PostEvent(#wnCleanup,wnd,0)
@@ -563,8 +563,24 @@ Procedure getFontSize(fontID.i)
   ProcedureReturn fontSize
 EndProcedure
 
+Procedure isVisible(*notification.wnNotification)
+  Protected rc.RECT
+  SystemParametersInfo_(#SPI_GETWORKAREA,0,rc,0)
+  If *notification\params\x >= rc\left And *notification\params\x + 320 <= rc\right
+    If *notification\params\y >= rc\top And *notification\params\y + *notification\params\h <= rc\bottom
+      ProcedureReturn #True
+    EndIf
+  EndIf
+  ; we will return true for notification which exceeds the work area
+  ; otherwise it will never be shown
+  If rc\right - rc\left < 320 Or rc\bottom - rc\top < *notification\params\h
+    ProcedureReturn #True
+  EndIf
+  ProcedureReturn #False
+EndProcedure
+
 DisableExplicit
-; IDE Options = PureBasic 5.40 LTS Beta 4 (Windows - x86)
+; IDE Options = PureBasic 5.40 LTS Beta 5 (Windows - x86)
 ; EnableUnicode
 ; EnableThread
 ; EnableXP
