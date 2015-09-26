@@ -8,11 +8,11 @@ IncludeFile "../wnotify.pbi"
 OpenWindow(0,#PB_Ignore,#PB_Ignore,200,50,"pb-win-notify",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
 ButtonGadget(#PB_Any,10,10,180,30,"show notification")
 
-CreateThread(@wnProcess(),10)
+wnInit()
 
 Repeat
   ev = WaitWindowEvent()
-  If ev = #wnCleanup : wnCleanup(EventWindow()) : EndIf
+  If ev = #wnCleanup : wnCleanup() : EndIf
   If ev = #PB_Event_Gadget
     *notification.wnNotification = AllocateMemory(SizeOf(wnNotification))
     With *notification
@@ -29,7 +29,7 @@ Repeat
     wnNotifyStruct(*notification)
   EndIf
 Until ev = #PB_Event_CloseWindow
-; IDE Options = PureBasic 5.40 LTS Beta 4 (Windows - x86)
+; IDE Options = PureBasic 5.40 LTS Beta 5 (Windows - x86)
 ; EnableUnicode
 ; EnableThread
 ; EnableXP

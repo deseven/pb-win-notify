@@ -1,8 +1,14 @@
-﻿; pb-win-notify rev.8
+﻿; pb-win-notify rev.9
 ; written by deseven
 ; https://github.com/deseven/pb-win-notify
 ; http://deseven.info
 
+; ### this is what you should call once before adding any notifications
+; wnInit(
+;  wait.i        - animation step in msec
+; )
+
+; ### that's what you should call to display your notification
 ; wnNotify(
 ;  title.s       - title of the notification
 ;  msg.s         - text of the notification
@@ -19,8 +25,24 @@
 ;  onCloseData.i - data which will be sent as EventData() (only if onClose = #wnCloseEvent)
 ; )
 
+; ### the same but you can pass a structure instead of the long line of params
 ; wnNotifyStruct(
-;  *notification.wnNotification - structure with params
+;  *notification - wnNotification structure with params
+; )
+
+; ### destroy old notifications, you should call it every time you got #wnCleanup event
+; wnCleanup(
+;  wnd.i         - notification window
+; )
+
+; ### destroy notification
+; wnDestroy(
+;  wnd.i         - notification window
+; )
+
+; ### destroy all notifications
+; wnDestroyAll(
+;  castFrom.i    - notifications casted from specified location
 ; )
 
 ; set that to true to check what's going on
@@ -61,13 +83,13 @@ Enumeration wnCloseActions
 EndEnumeration
 
 Enumeration wnCastFrom
+  #wnAll
   #wnLT
   #wnLB
   #wnCT
   #wnCB
   #wnRT
   #wnRB
-  #wnAll
 EndEnumeration
 
 Structure wnNotificationParams
@@ -92,6 +114,7 @@ Structure wnNotificationParams
   onClickData.i
   onClose.b
   onCloseData.i
+  expired.b
 EndStructure
 
 Structure wnNotification
@@ -106,31 +129,34 @@ EndStructure
 #wnIgnore = -32768
 
 Define wnMutex.i = CreateMutex()
+Define wnThread.i = 0
 NewList wnNotifications.wnNotification()
 
-; that's what you should call to display your notification
+Declare wnInit(wait.i = 10)
 Declare wnNotify(title.s,msg.s,castFrom.b = #wnLT,timeout.l = #wnDefTimeout,bgColor.l = #wnDefBgColor,frColor.l = #wnDefFrColor,titleFontID.i = 0,msgFontID.i = 0,iconID.i = 0,onClick.b = #wnClickNone,onClickData.i = #Null,onClose.i = #wnCloseNone,onCloseData.i = #Null)
-
-; the same but you can pass a structure instead of the long line of params
 Declare wnNotifyStruct(*notification)
-
-; (thread) animation and control
-Declare wnProcess(wait.i)
-
-; destroy old notifications
-Declare wnCleanup(wnd.i)
-
-; (thread) destroy notification
+Declare wnCleanup(wnd.i = 0)
 Declare wnDestroy(wnd.i)
-
-; (thread) destroy all notifications
 Declare wnDestroyAll(castFrom.i = #wnAll)
+
+; !BEWARE!
+; the following procedures are INTERNAL
+; you usually shouldn't use 'em
+
+; (thread, internal) notifications processing
+Declare wnProcess(wait.i)
 
 ; (thread, internal) helper function to actually add the notification without bothering the main thread
 Declare wnAdd(*notification.wnNotification)
 
+; (internal) destroy notification
+Declare wnDestroyReal(wnd.i)
+
 ; (internal) destroy current notification
 Declare wnDestroyThis()
+
+; (internal) destroy all notifications
+Declare wnDestroyAllReal(castFrom.i = #wnAll)
 
 ; (internal) callback for our notifications
 Declare wnCallback(hWnd.i,msg.i,wParam.i,lParam.i)
@@ -221,6 +247,13 @@ Procedure wnAdd(*notification.wnNotification)
   FreeMemory(*notification)
 EndProcedure
 
+Procedure wnInit(wait.i = 10)
+  Shared wnThread.i
+  If Not IsThread(wnThread)
+    ProcedureReturn CreateThread(@wnProcess(),wait)
+  EndIf
+EndProcedure
+
 Procedure wnProcess(wait.i)
   Shared wnMutex.i,wnNotifications()
   Protected animX.w,animY.w,castFrom.b,height.w,timePassed.i,deltaMove.f,deltaAlpha.f
@@ -275,9 +308,10 @@ Procedure wnProcess(wait.i)
   ForEver
 EndProcedure
 
-Procedure wnCleanup(wnd.i)
-  If IsWindow(wnd) : CloseWindow(wnd) : EndIf
-  CreateThread(@wnRecalc(),#False)
+Procedure wnCleanup(wnd.i = 0)
+  If wnd = 0 : wnd = EventWindow() : EndIf
+  If IsWindow(wnd) And wnd <> 0 : CloseWindow(wnd) : EndIf
+  ;CreateThread(@wnRecalc(),#False)
   CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed window " + Str(wnd) : CompilerEndIf
 EndProcedure
 
@@ -320,50 +354,52 @@ Procedure wnRecalc(noLock.i = #True)
   osCB = rc\bottom
   ForEach wnNotifications()
     redraw = #False
-    Select wnNotifications()\params\castFrom
-      Case #wnLT
-        newY = osLT + 10
-        If wnNotifications()\params\y <> newY
-          wnNotifications()\params\y = newY
-          redraw = #True
-        EndIf
-        osLT = newY + wnNotifications()\params\h
-      Case #wnRT
-        newY = osRT + 10
-        If wnNotifications()\params\y <> newY
-          wnNotifications()\params\y = newY
-          redraw = #True
-        EndIf
-        osRT = newY + wnNotifications()\params\h
-      Case #wnCT
-        newY = osCT + 10
-        If wnNotifications()\params\y <> newY
-          wnNotifications()\params\y = newY
-          redraw = #True
-        EndIf
-        osCT = newY + wnNotifications()\params\h
-      Case #wnLB
-        newY = osLB - wnNotifications()\params\h - 10
-        If wnNotifications()\params\y <> newY
-          wnNotifications()\params\y = newY
-          redraw = #True
-        EndIf
-        osLB = newY
-      Case #wnRB
-        newY = osRB - wnNotifications()\params\h - 10
-        If wnNotifications()\params\y <> newY
-          wnNotifications()\params\y = newY
-          redraw = #True
-        EndIf
-        osRB = newY
-      Case #wnCB
-        newY = osCB - wnNotifications()\params\h - 10
-        If wnNotifications()\params\y <> newY
-          wnNotifications()\params\y = newY
-          redraw = #True
-        EndIf
-        osCB = newY
-    EndSelect
+    If Not wnNotifications()\params\expired
+      Select wnNotifications()\params\castFrom
+        Case #wnLT
+          newY = osLT + 10
+          If wnNotifications()\params\y <> newY
+            wnNotifications()\params\y = newY
+            redraw = #True
+          EndIf
+          osLT = newY + wnNotifications()\params\h
+        Case #wnRT
+          newY = osRT + 10
+          If wnNotifications()\params\y <> newY
+            wnNotifications()\params\y = newY
+            redraw = #True
+          EndIf
+          osRT = newY + wnNotifications()\params\h
+        Case #wnCT
+          newY = osCT + 10
+          If wnNotifications()\params\y <> newY
+            wnNotifications()\params\y = newY
+            redraw = #True
+          EndIf
+          osCT = newY + wnNotifications()\params\h
+        Case #wnLB
+          newY = osLB - wnNotifications()\params\h - 10
+          If wnNotifications()\params\y <> newY
+            wnNotifications()\params\y = newY
+            redraw = #True
+          EndIf
+          osLB = newY
+        Case #wnRB
+          newY = osRB - wnNotifications()\params\h - 10
+          If wnNotifications()\params\y <> newY
+            wnNotifications()\params\y = newY
+            redraw = #True
+          EndIf
+          osRB = newY
+        Case #wnCB
+          newY = osCB - wnNotifications()\params\h - 10
+          If wnNotifications()\params\y <> newY
+            wnNotifications()\params\y = newY
+            redraw = #True
+          EndIf
+          osCB = newY
+      EndSelect
+    EndIf
     If redraw
       If wnNotifications()\active
         updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,wnNotifications()\params\x,wnNotifications()\params\y,320,wnNotifications()\params\h,255)
@@ -377,6 +413,10 @@ Procedure wnRecalc(noLock.i = #True)
 EndProcedure
 
 Procedure wnDestroy(wnd.i)
+  ProcedureReturn CreateThread(@wnDestroyReal(),wnd)
+EndProcedure
+
+Procedure wnDestroyReal(wnd.i)
   Shared wnMutex,wnNotifications()
   LockMutex(wnMutex)
   ForEach wnNotifications()
@@ -397,6 +437,9 @@ Procedure wnDestroyThis()
     PostEvent(#wnClose,wnNotifications()\params\window,0,0,wnNotifications()\params\onCloseData)
   EndIf
   wnd = wnNotifications()\params\window
+  wnNotifications()\params\expired = #True
+  wnRecalc()
+  SelectElement(wnNotifications(),cur)
   FreeImage(wnNotifications()\params\image)
   DeleteElement(wnNotifications())
   CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": destroyed notification " + Str(wnd) : CompilerEndIf
@@ -413,6 +456,10 @@ Procedure wnDestroyThis()
 EndProcedure
 
 Procedure wnDestroyAll(castFrom.i = #wnAll)
+  ProcedureReturn CreateThread(@wnDestroyAllReal(),castFrom)
+EndProcedure
+
+Procedure wnDestroyAllReal(castFrom.i = #wnAll)
   Shared wnMutex,wnNotifications()
   LockMutex(wnMutex)
   ForEach wnNotifications()

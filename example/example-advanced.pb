@@ -37,13 +37,13 @@ Procedure.s createLorem()
   ProcedureReturn lorem
 EndProcedure
 
-; you can tune the thread parameter, which defines the animation step in msec
+; you can tune the wnInit() parameter, which defines the animation step in msec
 ; however i recommend to keep it between 10 and 30
-CreateThread(@wnProcess(),10)
+wnInit(10)
 
 Repeat
   ev = WaitWindowEvent()
-  If ev = #wnCleanup : wnCleanup(EventWindow()) : EndIf
+  If ev = #wnCleanup : wnCleanup() : EndIf
   If ev = #PB_Event_Gadget
     Select EventGadget()
       Case buttonLT
@@ -71,8 +71,7 @@ Repeat
           onClick = #wnClickNone
         EndIf
       Case buttonDestroyAll
-        ; should be called in a thread
-        CreateThread(@wnDestroyAll(),#wnAll)
+        wnDestroyAll()
     EndSelect
   EndIf
 Until ev = #PB_Event_CloseWindow

@@ -18,11 +18,11 @@ iconClose = ImageID(LoadImage(#PB_Any,"res\iClose.png"))
 iconNotepad = ImageID(LoadImage(#PB_Any,"res\iNotepad.png"))
 iconLink = ImageID(LoadImage(#PB_Any,"res\iLink.png"))
 
-CreateThread(@wnProcess(),10)
+wnInit()
 
 Repeat
   ev = WaitWindowEvent()
-  If ev = #wnCleanup : wnCleanup(EventWindow()) : EndIf
+  If ev = #wnCleanup : wnCleanup() : EndIf
   If ev = #PB_Event_Gadget
     Select EventGadget()
       Case buttonClose
@@ -50,8 +50,7 @@ Repeat
     ; don't forget to use wnDestroy() if you don't need that notification anymore
     Select EventWindow()
       Case closeNotification
-        ; should be called in a thread
-        CreateThread(@wnDestroy(),EventWindow())
+        wnDestroy(EventWindow())
         closeNotification = 0 : DisableGadget(buttonClose,#False)
       Case linkNotification
         ; here we grab our url from memory
@@ -59,7 +58,7 @@ Repeat
         ; but if you have many you can assign them to the notifications
         ; and get it back like that
         RunProgram(PeekS(EventData()))
-        CreateThread(@wnDestroy(),EventWindow())
+        wnDestroy(EventWindow())
         linkNotification = 0 : DisableGadget(buttonLink,#False)
     EndSelect
   EndIf
@@ -68,12 +67,12 @@ Repeat
     Select EventWindow()
       Case notepadNotification
         RunProgram("notepad")
-        CreateThread(@wnDestroy(),EventWindow())
+        wnDestroy(EventWindow())
         notepadNotification = 0 : DisableGadget(buttonNotepad,#False)
     EndSelect
   EndIf
 Until ev = #PB_Event_CloseWindow
-; IDE Options = PureBasic 5.40 LTS Beta 4 (Windows - x86)
+; IDE Options = PureBasic 5.40 LTS Beta 5 (Windows - x86)
 ; EnableUnicode
 ; EnableThread
 ; EnableXP
