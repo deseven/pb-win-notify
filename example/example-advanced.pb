@@ -6,7 +6,12 @@ IncludeFile "../wnotify.pbi"
 UsePNGImageDecoder()
 
 timeout = 3000
-onClick = #wnClickNone
+onClick = WinNotify::#ClickNone
+
+;	A macro to makelong (used by custom placed notification)
+Macro MakeLong(loWord, hiWord)
+  (hiWord << 16 | loWord)
+EndMacro
 
 OpenWindow(0,#PB_Ignore,#PB_Ignore,200,160,"pb-win-notify advanced",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
 buttonLT = ButtonGadget(#PB_Any,10,10,60,40,"LT")
@@ -39,43 +44,49 @@ EndProcedure
 
 ; you can tune the wnInit() parameter, which defines the animation step in msec
 ; however i recommend to keep it between 10 and 30
-wnInit(10)
+WinNotify::Init(10)
+
+; Display a custom placed notification :
+WinNotify::Notify("This is a custom placed notification!","Look at the code to know how it's done!",MakeLong(WindowX(0),(WindowY(0)+10+WindowHeight(0,#PB_Window_FrameCoordinate))),2000,$646503,$eeeeee,titleFont,msgFont,iconCT,onClick)
 
 Repeat
   ev = WaitWindowEvent()
-  If ev = #wnCleanup : wnCleanup() : EndIf
+  If ev = WinNotify::#Cleanup : WinNotify::Cleanup() : EndIf
   If ev = #PB_Event_Gadget
     Select EventGadget()
       Case buttonLT
-        wnNotify("Hello there!",createLorem(),#wnLT,timeout,$646503,$eeeeee,titleFont,msgFont,iconLT,onClick)
+        WinNotify::Notify("Hello there!",createLorem(),WinNotify::#LT,timeout,$646503,$eeeeee,titleFont,msgFont,iconLT,onClick)
       Case buttonLB
-        wnNotify("Hello there!",createLorem(),#wnLB,timeout,$435bd9,$eeeeee,titleFont,msgFont,iconLB,onClick)
+        WinNotify::Notify("Hello there!",createLorem(),WinNotify::#LB,timeout,$435bd9,$eeeeee,titleFont,msgFont,iconLB,onClick)
       Case buttonCT
-        wnNotify("Hello there!",createLorem(),#wnCT,timeout,$c88200,$eeeeee,titleFont,msgFont,iconCT,onClick)
+        WinNotify::Notify("Hello there!",createLorem(),WinNotify::#CT,timeout,$c88200,$eeeeee,titleFont,msgFont,iconCT,onClick)
       Case buttonCB
-        wnNotify("Hello there!",createLorem(),#wnCB,timeout,$4229c0,$eeeeee,titleFont,msgFont,iconCB,onClick)
+        WinNotify::Notify("Hello there!",createLorem(),WinNotify::#CB,timeout,$4229c0,$eeeeee,titleFont,msgFont,iconCB,onClick)
       Case buttonRT
-        wnNotify("Hello there!",createLorem(),#wnRT,timeout,$493603,$eeeeee,titleFont,msgFont,iconRT,onClick)
+        WinNotify::Notify("Hello there!",createLorem(),WinNotify::#RT,timeout,$493603,$eeeeee,titleFont,msgFont,iconRT,onClick)
       Case buttonRB
-        wnNotify("Hello there!",createLorem(),#wnRB,timeout,$7a7753,$eeeeee,titleFont,msgFont,iconRB,onClick)
+        WinNotify::Notify("Hello there!",createLorem(),WinNotify::#RB,timeout,$7a7753,$eeeeee,titleFont,msgFont,iconRB,onClick)
       Case cbNoTimeout
         If GetGadgetState(cbNoTimeout) = #PB_Checkbox_Checked
-          timeout = #wnForever
+          timeout = WinNotify::#Forever
         Else
           timeout = 3000
         EndIf
       Case cbCloseOnClick
         If GetGadgetState(cbCloseOnClick) = #PB_Checkbox_Checked
-          onClick = #wnClickClose
+          onClick = WinNotify::#ClickClose
         Else
-          onClick = #wnClickNone
+          onClick = WinNotify::#ClickNone
         EndIf
       Case buttonDestroyAll
-        wnDestroyAll()
+        WinNotify::DestroyAll()
     EndSelect
   EndIf
 Until ev = #PB_Event_CloseWindow
-; IDE Options = PureBasic 5.40 LTS Beta 5 (Windows - x86)
+; IDE Options = PureBasic 5.40 LTS (Windows - x64)
+; CursorPosition = 49
+; FirstLine = 12
+; Folding = -
 ; EnableUnicode
 ; EnableThread
 ; EnableXP
