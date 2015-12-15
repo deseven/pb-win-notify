@@ -2,7 +2,7 @@
 
 ; in this example you'll see how to use the advanced functionality
 
-IncludeFile "../wnotify.pbi"
+IncludeFile "../wn.pbi"
 UsePNGImageDecoder()
 
 timeout = 3000
@@ -75,10 +75,3 @@ Repeat
     EndSelect
   EndIf
 Until ev = #PB_Event_CloseWindow
-; IDE Options = PureBasic 5.40 LTS Beta 5 (Windows - x86)
-; EnableUnicode
-; EnableThread
-; EnableXP
-; Executable = wn.exe
-; CompileSourceDirectory
-; EnableBuildCount = 4

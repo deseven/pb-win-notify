@@ -4,7 +4,7 @@
 
 myLink.s = "http://google.com"
 
-IncludeFile "../wnotify.pbi"
+IncludeFile "../wn.pbi"
 UsePNGImageDecoder()
 
 OpenWindow(0,#PB_Ignore,#PB_Ignore,200,100,"pb-win-notify events",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
@@ -72,10 +72,3 @@ Repeat
     EndSelect
   EndIf
 Until ev = #PB_Event_CloseWindow
-; IDE Options = PureBasic 5.40 LTS Beta 5 (Windows - x86)
-; EnableUnicode
-; EnableThread
-; EnableXP
-; Executable = wn.exe
-; CompileSourceDirectory
-; EnableBuildCount = 2

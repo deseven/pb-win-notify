@@ -3,7 +3,7 @@
 ; in this example you will see how to create notification with structure
 ; instead of huge string with params
 
-IncludeFile "../wnotify.pbi"
+IncludeFile "../wn.pbi"
 
 OpenWindow(0,#PB_Ignore,#PB_Ignore,200,50,"pb-win-notify",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
 ButtonGadget(#PB_Any,10,10,180,30,"show notification")
@@ -29,10 +29,3 @@ Repeat
     wnNotifyStruct(*notification)
   EndIf
 Until ev = #PB_Event_CloseWindow
-; IDE Options = PureBasic 5.40 LTS Beta 5 (Windows - x86)
-; EnableUnicode
-; EnableThread
-; EnableXP
-; Executable = wn.exe
-; CompileSourceDirectory
-; EnableBuildCount = 2
