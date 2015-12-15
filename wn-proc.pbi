@@ -92,7 +92,7 @@ Procedure wnProcess(wait.i)
                 deltaMove = (320 + wnNotifications()\params\x)/#wnInAnimTime
                 animX = -320 + deltaMove*timePassed
                 animY = wnNotifications()\params\y
-              Case #wnCT,#wnCB
+              Case #wnCT,#wnCB,#wnCustom
                 animX = wnNotifications()\params\x
                 animY = wnNotifications()\params\y
               Case #wnRT,#wnRB

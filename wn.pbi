@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.10
+﻿; pb-win-notify rev.11
 ; written by deseven
 ; thanks to poshu for contributions!
 ;
@@ -91,6 +91,7 @@ Enumeration wnCastFrom
   #wnCB
   #wnRT
   #wnRB
+  #wnCustom
 EndEnumeration
 
 Structure wnNotificationParams

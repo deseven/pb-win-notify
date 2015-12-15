@@ -8,16 +8,21 @@ UsePNGImageDecoder()
 timeout = 3000
 onClick = #wnClickNone
 
-OpenWindow(0,#PB_Ignore,#PB_Ignore,200,160,"pb-win-notify advanced",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
-buttonLT = ButtonGadget(#PB_Any,10,10,60,40,"LT")
-buttonLB = ButtonGadget(#PB_Any,10,50,60,40,"LB")
-buttonCT = ButtonGadget(#PB_Any,70,10,60,40,"CT")
-buttonCB = ButtonGadget(#PB_Any,70,50,60,40,"CB")
-buttonRT = ButtonGadget(#PB_Any,130,10,60,40,"RT")
-buttonRB = ButtonGadget(#PB_Any,130,50,60,40,"RB")
-cbNoTimeout = CheckBoxGadget(#PB_Any,10,90,90,20,"no timeout")
-cbCloseOnClick = CheckBoxGadget(#PB_Any,100,90,90,20,"close on click")
-buttonDestroyAll = ButtonGadget(#PB_Any,10,110,180,40,"destroy all")
+OpenWindow(0,#PB_Ignore,#PB_Ignore,200,200,"pb-win-notify advanced",#PB_Window_SystemMenu|#PB_Window_ScreenCentered)
+TextGadget(#PB_Any,14,22,10,20,"x:")
+TextGadget(#PB_Any,74,22,10,20,"y:")
+customX = StringGadget(#PB_Any,24,20,30,20,"500",#PB_String_Numeric)
+customY = StringGadget(#PB_Any,84,20,30,20,"500",#PB_String_Numeric)
+buttonCustom = ButtonGadget(#PB_Any,130,10,60,40,"Custom")
+buttonLT = ButtonGadget(#PB_Any,10,50,60,40,"LT")
+buttonLB = ButtonGadget(#PB_Any,10,90,60,40,"LB")
+buttonCT = ButtonGadget(#PB_Any,70,50,60,40,"CT")
+buttonCB = ButtonGadget(#PB_Any,70,90,60,40,"CB")
+buttonRT = ButtonGadget(#PB_Any,130,50,60,40,"RT")
+buttonRB = ButtonGadget(#PB_Any,130,90,60,40,"RB")
+cbNoTimeout = CheckBoxGadget(#PB_Any,10,130,90,20,"no timeout")
+cbCloseOnClick = CheckBoxGadget(#PB_Any,100,130,90,20,"close on click")
+buttonDestroyAll = ButtonGadget(#PB_Any,10,150,180,40,"destroy all")
 
 ; icons/fonts
 titleFont = FontID(LoadFont(#PB_Any,"Calibri",13,#PB_Font_Bold))
@@ -46,6 +51,22 @@ Repeat
   If ev = #wnCleanup : wnCleanup() : EndIf
   If ev = #PB_Event_Gadget
     Select EventGadget()
+      Case buttonCustom
+        *notification.wnNotification = AllocateMemory(SizeOf(wnNotification))
+        With *notification
+          \title = "Hello there!"
+          \msg = createLorem()
+          \params\bgColor = $4a8085
+          \params\frColor = $eeeeee
+          \params\titleFontID = titleFont
+          \params\msgFontID = msgFont
+          \params\castFrom = #wnCustom
+          \params\x = Val(GetGadgetText(customX))
+          \params\y = Val(GetGadgetText(customY))
+          \params\onClick = onClick
+          \params\timeout = timeout
+        EndWith
+        wnNotifyStruct(*notification)
       Case buttonLT
         wnNotify("Hello there!",createLorem(),#wnLT,timeout,$646503,$eeeeee,titleFont,msgFont,iconLT,onClick)
       Case buttonLB
