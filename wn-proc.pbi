@@ -440,10 +440,3 @@ Procedure isVisible(*notification.wnNotification)
   EndIf
   ProcedureReturn #False
 EndProcedure
-
-DisableExplicit
-; IDE Options = PureBasic 5.40 LTS Beta 5 (Windows - x86)
-; EnableUnicode
-; EnableThread
-; EnableXP
-; EnableBuildCount = 0

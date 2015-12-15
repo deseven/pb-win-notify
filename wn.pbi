@@ -4,6 +4,9 @@
 ;
 ; https://github.com/deseven/pb-win-notify
 
+; ### Notes:
+; Threadsafe is REQUIRED if you plan to have more than one active notification.
+
 ; ### this is what you should call once before adding any notifications
 ; wnInit(
 ;  wait.i        - animation step in msec
