@@ -9,8 +9,13 @@ WN::Init()
 
 Repeat
   ev = WaitWindowEvent()
-  If ev = WN::#wnCleanup : WN::Cleanup() : EndIf
+  If ev = WN::#Cleanup : WN::Cleanup() : EndIf
   If ev = #PB_Event_Gadget
-    WN::Notify("Hello there!","This is a basic notification created with pb-win-notify!",WN::#wnRB)
+    WN::Notify("Hello there!","This is a basic notification created with pb-win-notify!",WN::#RB)
   EndIf
 Until ev = #PB_Event_CloseWindow
+
+; IDE Options = PureBasic 5.40 LTS (Windows - x86)
+; EnableUnicode
+; EnableThread
+; EnableXP

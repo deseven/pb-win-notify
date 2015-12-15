@@ -96,3 +96,8 @@ Repeat
     EndSelect
   EndIf
 Until ev = #PB_Event_CloseWindow
+; IDE Options = PureBasic 5.40 LTS (Windows - x86)
+; Folding = -
+; EnableUnicode
+; EnableThread
+; EnableXP

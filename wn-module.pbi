@@ -2,14 +2,68 @@
 
 DeclareModule WN
   IncludeFile "wn.pbi"
-  Macro Notify : WN::wnNotify : EndMacro
-  Macro Init : WN::wnInit : EndMacro
-  Macro NotifyStruct : WN::wnNotifyStruct : EndMacro
-  Macro Cleanup : WN::wnCleanup : EndMacro
-  Macro Destroy : WN::wnDestroy : EndMacro
-  Macro DestroyAll : WN::wnDestroyAll : EndMacro
+  
+  ; constants map
+  #Debug = #wnDebug
+  #FadeIn = #wnFadeIn
+  #SlideIn = #wnSlideIn
+  #FadeOut = #wnFadeOut
+  #InAnimTime = #wnInAnimTime
+  #OutAnimTime = #wnOutAnimTime
+  #DefTimeout = #wnDefTimeout
+  #DefBgColor = #wnDefBgColor
+  #DefFrColor = #wnDefFrColor
+  #Cleanup = #wnCleanup
+  #Click = #wnClick
+  #Close = #wnClose
+  #ClickNone = #wnClickNone
+  #ClickClose = #wnClickClose
+  #ClickEvent = #wnClickClose
+  #CloseNone = #wnCloseNone
+  #CloseEvent = #wnCloseEvent
+  #All = #wnAll
+  #LT = #wnLT
+  #LB = #wnLB
+  #CT = #wnCT
+  #CB = #wnCB
+  #RT = #wnRT
+  #RB = #wnRB
+  #Custom = #wnCustom
+  #Forever = #wnForever
+  #Ignore_ = #wnIgnore
+  
+  Declare Init(wait.i = 10)
+  Declare Notify(title.s,msg.s,castFrom.b = #LT,timeout.l = #DefTimeout,bgColor.l = #DefBgColor,frColor.l = #DefFrColor,titleFontID.i = 0,msgFontID.i = 0,iconID.i = 0,onClick.b = #ClickNone,onClickData.i = #Null,onClose.i = #CloseNone,onCloseData.i = #Null)
+  Declare NotifyStruct(*notification.wnNotification)
+  Declare Cleanup(wnd.i = 0)
+  Declare Destroy(wnd.i)
+  Declare DestroyAll(castFrom.i = #All)
 EndDeclareModule
 
 Module WN
   IncludeFile "wn-proc.pbi"
+  
+  ; procedures map
+  Procedure Init(wait.i = 10)
+    wnInit(wait)
+  EndProcedure
+  Procedure Notify(title.s,msg.s,castFrom.b = #LT,timeout.l = #DefTimeout,bgColor.l = #DefBgColor,frColor.l = #DefFrColor,titleFontID.i = 0,msgFontID.i = 0,iconID.i = 0,onClick.b = #ClickNone,onClickData.i = #Null,onClose.i = #CloseNone,onCloseData.i = #Null)
+    wnNotify(title,msg,castFrom,timeout,bgColor,frColor,titleFontID,msgFontID,iconID,onClick,onClickData,onClose,onCloseData)
+  EndProcedure
+  Procedure NotifyStruct(*notification.wnNotification)
+    wnNotifyStruct(*notification)
+  EndProcedure
+  Procedure Cleanup(wnd.i = 0)
+    wnCleanup(wnd)
+  EndProcedure
+  Procedure Destroy(wnd.i)
+    wnDestroy(wnd)
+  EndProcedure
+  Procedure DestroyAll(castFrom.i = #All)
+    wnDestroyAll(castFrom)
+  EndProcedure
 EndModule
+; IDE Options = PureBasic 5.40 LTS (Windows - x86)
+; Folding = --
+; EnableUnicode
+; EnableXP

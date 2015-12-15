@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.11
+﻿; pb-win-notify rev.12
 ; written by deseven
 ; thanks to poshu for contributions!
 ;
@@ -65,8 +65,6 @@
 #wnDefTimeout = 3000
 #wnDefBgColor = $ffffff
 #wnDefFrColor = $000000
-
-EnableExplicit
 
 ; +1000 to make sure that we won't interfere in some custom events
 Enumeration #PB_Event_FirstCustomValue + 1000
@@ -191,5 +189,11 @@ Declare getFontSize(fontID.i)
 Declare isVisible(*notification.wnNotification)
 
 CompilerIf #PB_Compiler_Module = ""
+  EnableExplicit
   IncludeFile "wn-proc.pbi"
+  DisableExplicit
 CompilerEndIf
+; IDE Options = PureBasic 5.40 LTS (Windows - x86)
+; Folding = -
+; EnableUnicode
+; EnableXP
