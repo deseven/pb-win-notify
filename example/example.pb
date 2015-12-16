@@ -1,10 +1,10 @@
 ﻿; pb-win-notify example
 
 ; in order to use pb-win-notify you have to perform 4 simple steps:
-; 1. include the wnotify.pbi file
+; 1. include the wn.pbi file
 ; 2. call wnInit() once
 ; 3. periodically check for the #wnCleanup event and call wnCleanup()
-; 4. create notifications by calling wnNotification() from anywhere you need
+; 4. create notifications by calling wnNotify() from anywhere you need
 
 IncludeFile "../wn.pbi" ; 1
 

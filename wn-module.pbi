@@ -45,22 +45,22 @@ Module WN
   
   ; procedures map
   Procedure Init(wait.i = 10)
-    wnInit(wait)
+    ProcedureReturn wnInit(wait)
   EndProcedure
   Procedure Notify(title.s,msg.s,castFrom.b = #LT,timeout.l = #DefTimeout,bgColor.l = #DefBgColor,frColor.l = #DefFrColor,titleFontID.i = 0,msgFontID.i = 0,iconID.i = 0,onClick.b = #ClickNone,onClickData.i = #Null,onClose.i = #CloseNone,onCloseData.i = #Null)
-    wnNotify(title,msg,castFrom,timeout,bgColor,frColor,titleFontID,msgFontID,iconID,onClick,onClickData,onClose,onCloseData)
+    ProcedureReturn wnNotify(title,msg,castFrom,timeout,bgColor,frColor,titleFontID,msgFontID,iconID,onClick,onClickData,onClose,onCloseData)
   EndProcedure
   Procedure NotifyStruct(*notification.wnNotification)
-    wnNotifyStruct(*notification)
+    ProcedureReturn wnNotifyStruct(*notification)
   EndProcedure
   Procedure Cleanup(wnd.i = 0)
-    wnCleanup(wnd)
+    ProcedureReturn wnCleanup(wnd)
   EndProcedure
   Procedure Destroy(wnd.i)
-    wnDestroy(wnd)
+    ProcedureReturn wnDestroy(wnd)
   EndProcedure
   Procedure DestroyAll(castFrom.i = #All)
-    wnDestroyAll(castFrom)
+    ProcedureReturn wnDestroyAll(castFrom)
   EndProcedure
 EndModule
 ; IDE Options = PureBasic 5.40 LTS (Windows - x86)

@@ -18,12 +18,14 @@ Repeat
     With *notification
       ; title, msg, timeout and colors are mandatory
       \title = "Hello there!"
-      \msg = "This is a basic notification created with pb-win-notify!"
+      \msg = "This is a basic notification created with pb-win-notify by wnNotifyStruct procedure!"
       \params\timeout = #wnDefTimeout
       \params\bgColor = #wnDefBgColor
       \params\frColor = #wnDefFrColor
       ; browse the structure to see all of the available params
       \params\castFrom = #wnCT
+      ; this method also allow to tune some more params, such as notification width
+      \params\w = 600
     EndWith
     ; don't worry about memory, the structure will be freed automatically
     wnNotifyStruct(*notification)

@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.12
+﻿; pb-win-notify rev.13
 ; written by deseven
 ; thanks to poshu for contributions!
 ;
@@ -62,6 +62,7 @@
 #wnOutAnimTime = 800
 
 ; defaults
+#wnDefWidth = 320
 #wnDefTimeout = 3000
 #wnDefBgColor = $ffffff
 #wnDefFrColor = $000000
@@ -105,6 +106,7 @@ Structure wnNotificationParams
   msgHandle.i
   x.i
   y.i
+  w.w
   h.w
   timeout.l
   castFrom.b

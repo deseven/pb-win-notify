@@ -20,7 +20,10 @@ EndProcedure
 
 Procedure wnNotifyStruct(*notification.wnNotification)
   Protected rc.RECT,wnd.i
-  *notification\params\window = OpenWindow(#PB_Any,#PB_Ignore,#PB_Ignore,320,100,"",#PB_Window_ScreenCentered|#PB_Window_BorderLess|#PB_Window_Invisible)
+  If Not *notification\params\w
+    *notification\params\w = #wnDefWidth
+  EndIf
+  *notification\params\window = OpenWindow(#PB_Any,#PB_Ignore,#PB_Ignore,*notification\params\w,100,"",#PB_Window_ScreenCentered|#PB_Window_BorderLess|#PB_Window_Invisible)
   If IsWindow(*notification\params\window)
     *notification\params\windowID = WindowID(*notification\params\window)
     SetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE,GetWindowLongPtr_(*notification\params\windowID,#GWL_EXSTYLE)|#WS_EX_LAYERED)
@@ -28,8 +31,12 @@ Procedure wnNotifyStruct(*notification.wnNotification)
     SetWindowCallback(@wnCallback(),*notification\params\window)
     StickyWindow(*notification\params\window,#True)
     wnd = *notification\params\window
-    *notification\params\image = createNotificationImage(320,*notification\title,*notification\msg,*notification\params\frColor,*notification\params\bgColor,*notification\params\iconID,*notification\params\titleFontID,*notification\params\msgFontID)
-    *notification\params\imageID = ImageID(*notification\params\image)
+    If (Not IsImage(*notification\params\image)) Or (Not *notification\params\imageID)
+      *notification\params\image = createNotificationImage(*notification\params\w,*notification\title,*notification\msg,*notification\params\frColor,*notification\params\bgColor,*notification\params\iconID,*notification\params\titleFontID,*notification\params\msgFontID)
+      *notification\params\imageID = ImageID(*notification\params\image)
+    Else
+      *notification\params\w = ImageWidth(*notification\params\image)
+    EndIf
     *notification\params\h = ImageHeight(*notification\params\image)
     CreateThread(@wnAdd(),*notification)
     CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": adding notification" : CompilerEndIf
@@ -47,9 +54,9 @@ Procedure wnAdd(*notification.wnNotification)
     Case #wnLT,#wnLB
       *notification\params\x = rc\left + 10
     Case #wnCT,#wnCB
-      *notification\params\x = rc\right/2 - 320/2
+      *notification\params\x = rc\right/2 - *notification\params\w/2
     Case #wnRT,#wnRB
-      *notification\params\x = rc\right - 320 - 10
+      *notification\params\x = rc\right - *notification\params\w - 10
   EndSelect
   LockMutex(wnMutex)
   AddElement(wnNotifications())
@@ -78,7 +85,7 @@ Procedure wnProcess(wait.i)
       timePassed = ElapsedMilliseconds() - wnNotifications()\active
       If Not wnNotifications()\active
         If isVisible(@wnNotifications())
-          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,-10000,-10000,320,wnNotifications()\params\h,255,#True)
+          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,-10000,-10000,wnNotifications()\params\w,wnNotifications()\params\h,255,#True)
           CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) +  ": displaying notification in [" + Str(wnNotifications()\params\x) + "," + Str(wnNotifications()\params\y) + "]" : CompilerEndIf
           wnNotifications()\active = ElapsedMilliseconds()
         EndIf
@@ -86,17 +93,17 @@ Procedure wnProcess(wait.i)
         If timePassed <= #wnInAnimTime
           CompilerIf #wnDebug : Debug Str(ElapsedMilliseconds()) + ": anim display " + Str(timePassed) : CompilerEndIf
           If #wnSlideIn
-            deltaMove = 330/#wnInAnimTime
+            deltaMove = (wnNotifications()\params\w + 10)/#wnInAnimTime
             Select wnNotifications()\params\castFrom
               Case #wnLT,#wnLB
-                deltaMove = (320 + wnNotifications()\params\x)/#wnInAnimTime
-                animX = -320 + deltaMove*timePassed
+                deltaMove = (wnNotifications()\params\w + wnNotifications()\params\x)/#wnInAnimTime
+                animX = -wnNotifications()\params\w + deltaMove*timePassed
                 animY = wnNotifications()\params\y
               Case #wnCT,#wnCB,#wnCustom
                 animX = wnNotifications()\params\x
                 animY = wnNotifications()\params\y
               Case #wnRT,#wnRB
-                animX = wnNotifications()\params\x + 330 - deltaMove*timePassed
+                animX = wnNotifications()\params\x + wnNotifications()\params\w + 10 - deltaMove*timePassed
                 animY = wnNotifications()\params\y
             EndSelect
           Else
@@ -104,16 +111,16 @@ Procedure wnProcess(wait.i)
             animY = wnNotifications()\params\y
           EndIf
           If #wnFadeIn : deltaAlpha = timePassed/#wnInAnimTime : Else : deltaAlpha = 1 : EndIf
-          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,animX,animY,320,wnNotifications()\params\h,255 * deltaAlpha)
+          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,animX,animY,wnNotifications()\params\w,wnNotifications()\params\h,255 * deltaAlpha)
         ElseIf Not wnNotifications()\shown
           wnNotifications()\shown = #True
-          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,wnNotifications()\params\x,wnNotifications()\params\y,320,wnNotifications()\params\h,255)
+          updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,wnNotifications()\params\x,wnNotifications()\params\y,wnNotifications()\params\w,wnNotifications()\params\h,255)
         ElseIf wnNotifications()\params\timeout <> #wnForever
           If timePassed >= wnNotifications()\params\timeout + #wnOutAnimTime Or (timePassed >= wnNotifications()\params\timeout And Not #wnFadeOut)
             wnDestroyThis()
           ElseIf timePassed >= wnNotifications()\params\timeout
             deltaAlpha = Abs(wnNotifications()\params\timeout - timePassed)/#wnOutAnimTime*255
-            updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,#wnIgnore,#wnIgnore,320,wnNotifications()\params\h,255-deltaAlpha)
+            updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,#wnIgnore,#wnIgnore,wnNotifications()\params\w,wnNotifications()\params\h,255-deltaAlpha)
           EndIf
         EndIf
       EndIf
@@ -217,7 +224,7 @@ Procedure wnRecalc(noLock.i = #True)
     EndIf
     If redraw
       If wnNotifications()\active
-        updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,wnNotifications()\params\x,wnNotifications()\params\y,320,wnNotifications()\params\h,255)
+        updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,wnNotifications()\params\x,wnNotifications()\params\y,wnNotifications()\params\w,wnNotifications()\params\h,255)
       Else
         updateNotification(wnNotifications()\params\window,wnNotifications()\params\windowID,wnNotifications()\params\image,wnNotifications()\params\x,wnNotifications()\params\y,-10000,-10000,255)
       EndIf  
@@ -428,14 +435,14 @@ EndProcedure
 Procedure isVisible(*notification.wnNotification)
   Protected rc.RECT
   SystemParametersInfo_(#SPI_GETWORKAREA,0,rc,0)
-  If *notification\params\x >= rc\left And *notification\params\x + 320 <= rc\right
+  If *notification\params\x >= rc\left And *notification\params\x + *notification\params\w <= rc\right
     If *notification\params\y >= rc\top And *notification\params\y + *notification\params\h <= rc\bottom
       ProcedureReturn #True
     EndIf
   EndIf
   ; we will return true for notification which exceeds the work area
   ; otherwise it will never be shown
-  If rc\right - rc\left < 320 Or rc\bottom - rc\top < *notification\params\h
+  If rc\right - rc\left < *notification\params\w Or rc\bottom - rc\top < *notification\params\h
     ProcedureReturn #True
   EndIf
   ProcedureReturn #False
