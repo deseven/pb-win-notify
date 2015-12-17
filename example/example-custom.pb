@@ -1,7 +1,7 @@
 ﻿; pb-win-notify custom example
 
 ; in this example you'll learn how to create your own custom notification
-; we will use a simple image, but it's up to you how you'll to create it
+; we will use a simple image, but it's up to you how you'll create it
 ; you can check the createNotificationImage() from wn-proc.pbi to get an idea
 
 IncludeFile "../wn.pbi"

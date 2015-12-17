@@ -41,7 +41,9 @@ DeclareModule WN
 EndDeclareModule
 
 Module WN
+  EnableExplicit
   IncludeFile "wn-proc.pbi"
+  DisableExplicit
   
   ; procedures map
   Procedure Init(wait.i = 10)

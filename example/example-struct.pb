@@ -24,7 +24,7 @@ Repeat
       \params\frColor = #wnDefFrColor
       ; browse the structure to see all of the available params
       \params\castFrom = #wnCT
-      ; this method also allow to tune some more params, such as notification width
+      ; this method also allows to tune some more params, such as notification width
       \params\w = 600
     EndWith
     ; don't worry about memory, the structure will be freed automatically

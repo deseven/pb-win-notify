@@ -1,4 +1,4 @@
-﻿; pb-win-notify rev.13
+﻿; pb-win-notify rev.14
 ; written by deseven
 ; thanks to poshu for contributions!
 ;
@@ -173,22 +173,22 @@ Declare wnOnclick(hWnd.i)
 Declare wnRecalc(noLock.i = #True)
 
 ; (internal) creates notification image
-Declare createNotificationImage(width.l,title.s,msg.s,frColor.l,bgColor.l,iconID.i,titleFontID.i,msgFontID.i)
+Declare wnCreateNotificationImage(width.l,title.s,msg.s,frColor.l,bgColor.l,iconID.i,titleFontID.i,msgFontID.i)
 
 ; (internal) updates position, size and opacity of the notification
-Declare updateNotification(window.i,windowID.i,image.i,x.l = #wnIgnore,y.l = #wnIgnore,w.l = #wnIgnore,h.l = #wnIgnore,alpha.w = #wnIgnore,showWindow = #False)
+Declare wnUpdateNotification(window.i,windowID.i,image.i,x.l = #wnIgnore,y.l = #wnIgnore,w.l = #wnIgnore,h.l = #wnIgnore,alpha.w = #wnIgnore,showWindow = #False)
 
 ; (internal) taken from pb forums, don't remember the exact topic
 Declare wnHideFromTaskBar(hWnd.i,flag.b)
 
 ; (internal) wrap long text with lines
-Declare wrapText(text.s,width.l,List lines.s())
+Declare wnWrapText(text.s,width.l,List lines.s())
 
 ; (internal) gets the font size in pixels
-Declare getFontSize(fontID.i)
+Declare wnGetFontSize(fontID.i)
 
 ; (internal) check if the notification should be visible
-Declare isVisible(*notification.wnNotification)
+Declare wnIsVisible(*notification.wnNotification)
 
 CompilerIf #PB_Compiler_Module = ""
   EnableExplicit
